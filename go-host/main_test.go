@@ -118,3 +118,54 @@ func BenchmarkBaselineAddWithTime(b *testing.B) {
 		_ = baselineAddWithTime(1, 2)
 	}
 }
+
+func BenchmarkAllocDealloc(b *testing.B) {
+	r := wazero.NewRuntime(context.Background())
+
+	// Set up the host time module that the WASM module imports
+	r.NewHostModuleBuilder("time").
+		NewFunctionBuilder().
+		WithFunc(func(ctx context.Context) int64 {
+			return time.Now().UnixNano()
+		}).
+		Export("now").
+		Instantiate(context.Background())
+
+	wasmBytes, err := os.ReadFile("../script/main.wasm")
+	if err != nil {
+		panic(err)
+	}
+
+	compiled, err := r.CompileModule(context.Background(), wasmBytes)
+	if err != nil {
+		panic(err)
+	}
+
+	mod, err := r.InstantiateModule(context.Background(), compiled, wazero.NewModuleConfig())
+	if err != nil {
+		panic(err)
+	}
+
+	b.ReportAllocs()
+
+	allocate := mod.ExportedFunction("allocate")
+	deallocate := mod.ExportedFunction("deallocate")
+	ctx := context.Background()
+
+	const allocSize = 128
+
+	for b.Loop() {
+		results, err := allocate.Call(ctx, uint64(allocSize))
+		if err != nil {
+			panic(err)
+		}
+		ptr := results[0]
+
+		_, err = deallocate.Call(ctx, ptr)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	b.ReportMetric(float64(mod.Memory().Size()), "memory")
+}
