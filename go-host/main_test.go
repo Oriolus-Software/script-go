@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/tetratelabs/wazero"
+	"github.com/tetratelabs/wazero/api"
 )
 
 // Baseline functions - native Go equivalents of WASM functions
@@ -23,34 +24,19 @@ func baselineAddWithTime(a, b int) int64 {
 	return int64(result) + timestamp
 }
 
-func BenchmarkAdd(b *testing.B) {
-	r := wazero.NewRuntime(context.Background())
-
-	// Set up the host time module that the WASM module imports
-	r.NewHostModuleBuilder("time").
-		NewFunctionBuilder().
-		WithFunc(func(ctx context.Context) int64 {
-			return time.Now().UnixNano()
-		}).
-		Export("now").
-		Instantiate(context.Background())
-
-	wasmBytes, err := os.ReadFile("../script/main.wasm")
-	if err != nil {
-		panic(err)
-	}
-
-	compiled, err := r.CompileModule(context.Background(), wasmBytes)
-	if err != nil {
-		panic(err)
-	}
-
-	mod, err := r.InstantiateModule(context.Background(), compiled, wazero.NewModuleConfig())
-	if err != nil {
-		panic(err)
-	}
-
+func BenchmarkBaselineAdd(b *testing.B) {
 	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = baselineAdd(1, 2)
+	}
+}
+
+func BenchmarkAdd(b *testing.B) {
+	b.ReportAllocs()
+
+	r := createRuntime()
+	mod := r.LoadFromFile("../script/main.wasm")
 
 	add := mod.ExportedFunction("add")
 	ctx := context.Background()
@@ -63,36 +49,24 @@ func BenchmarkAdd(b *testing.B) {
 	}
 }
 
-func BenchmarkAddWithTime(b *testing.B) {
-	r := wazero.NewRuntime(context.Background())
-
-	r.NewHostModuleBuilder("time").
-		NewFunctionBuilder().
-		WithFunc(func(ctx context.Context) int64 {
-			return time.Now().UnixNano()
-		}).
-		Export("now").
-		Instantiate(context.Background())
-
-	wasmBytes, err := os.ReadFile("../script/main.wasm")
-	if err != nil {
-		panic(err)
-	}
-
-	compiled, err := r.CompileModule(context.Background(), wasmBytes)
-	if err != nil {
-		panic(err)
-	}
-
-	mod, err := r.InstantiateModule(context.Background(), compiled, wazero.NewModuleConfig())
-	if err != nil {
-		panic(err)
-	}
-
+func BenchmarkBaselineAddWithTime(b *testing.B) {
 	b.ReportAllocs()
+
+	for b.Loop() {
+		_ = baselineAddWithTime(1, 2)
+	}
+}
+
+func BenchmarkAddWithTime(b *testing.B) {
+	b.ReportAllocs()
+
+	r := createRuntime()
+	mod := r.LoadFromFile("../script/main.wasm")
 
 	addWithTime := mod.ExportedFunction("addWithTime")
 	ctx := context.Background()
+
+	b.ReportAllocs()
 
 	for b.Loop() {
 		if _, err := addWithTime.Call(ctx, 1, 2); err == nil {
@@ -102,51 +76,11 @@ func BenchmarkAddWithTime(b *testing.B) {
 	}
 }
 
-// Baseline benchmarks - native Go function calls without WASM
-func BenchmarkBaselineAdd(b *testing.B) {
-	b.ReportAllocs()
-
-	for b.Loop() {
-		_ = baselineAdd(1, 2)
-	}
-}
-
-func BenchmarkBaselineAddWithTime(b *testing.B) {
-	b.ReportAllocs()
-
-	for b.Loop() {
-		_ = baselineAddWithTime(1, 2)
-	}
-}
-
 func BenchmarkAllocDealloc(b *testing.B) {
-	r := wazero.NewRuntime(context.Background())
-
-	// Set up the host time module that the WASM module imports
-	r.NewHostModuleBuilder("time").
-		NewFunctionBuilder().
-		WithFunc(func(ctx context.Context) int64 {
-			return time.Now().UnixNano()
-		}).
-		Export("now").
-		Instantiate(context.Background())
-
-	wasmBytes, err := os.ReadFile("../script/main.wasm")
-	if err != nil {
-		panic(err)
-	}
-
-	compiled, err := r.CompileModule(context.Background(), wasmBytes)
-	if err != nil {
-		panic(err)
-	}
-
-	mod, err := r.InstantiateModule(context.Background(), compiled, wazero.NewModuleConfig())
-	if err != nil {
-		panic(err)
-	}
-
 	b.ReportAllocs()
+
+	r := createRuntime()
+	mod := r.LoadFromFile("../script/main.wasm")
 
 	allocate := mod.ExportedFunction("allocate")
 	deallocate := mod.ExportedFunction("deallocate")
@@ -168,4 +102,41 @@ func BenchmarkAllocDealloc(b *testing.B) {
 	}
 
 	b.ReportMetric(float64(mod.Memory().Size()), "memory")
+}
+
+type testRuntime struct {
+	wazero.Runtime
+}
+
+func (r *testRuntime) LoadFromFile(path string) api.Module {
+	wasmBytes, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+
+	compiled, err := r.CompileModule(context.Background(), wasmBytes)
+	if err != nil {
+		panic(err)
+	}
+
+	mod, err := r.InstantiateModule(context.Background(), compiled, wazero.NewModuleConfig())
+	if err != nil {
+		panic(err)
+	}
+
+	return mod
+}
+
+func createRuntime() *testRuntime {
+	r := wazero.NewRuntime(context.Background())
+
+	r.NewHostModuleBuilder("time").
+		NewFunctionBuilder().
+		WithFunc(func(ctx context.Context) int64 {
+			return time.Now().UnixNano()
+		}).
+		Export("now").
+		Instantiate(context.Background())
+
+	return &testRuntime{Runtime: r}
 }
