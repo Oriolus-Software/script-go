@@ -8,6 +8,6 @@ vars:
 tasks:
   default:
     cmds:
-      - cd script && tinygo build -o main.wasm -target=wasm-unknown main.go
-      - cargo r
+      - cd script && tinygo build -o main.wasm -target=wasm-unknown -gc=precise main.go
+      - cargo r -r
     silent: true
