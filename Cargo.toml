@@ -1,0 +1,12 @@
+[package]
+name = "go-wasm"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+wasmtime = "35.0.0"
+
+[profile.release]
+lto = "thin"
+opt-level = 3
+codegen-units = 1
