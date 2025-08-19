@@ -19,26 +19,26 @@ fn main() {
     let deallocate_func = instance.get_func(&mut store, "deallocate").unwrap();
     let mut results = [Val::I32(0)];
 
-    for _ in 0..1000 {
-        let start = Instant::now();
-        allocate_func
-            .call(&mut store, &[Val::I32(128)], &mut results)
-            .unwrap();
-        let ptr = results[0].i32().unwrap();
-        let memory = instance.get_memory(&mut store, "memory").unwrap();
+    // for _ in 0..1000 {
+    //     let start = Instant::now();
+    //     allocate_func
+    //         .call(&mut store, &[Val::I32(128)], &mut results)
+    //         .unwrap();
+    //     let ptr = results[0].i32().unwrap();
+    //     let memory = instance.get_memory(&mut store, "memory").unwrap();
 
-        deallocate_func
-            .call(&mut store, &[Val::I32(ptr)], &mut [])
-            .unwrap();
+    //     deallocate_func
+    //         .call(&mut store, &[Val::I32(ptr)], &mut [])
+    //         .unwrap();
 
-        let elapsed = start.elapsed().as_nanos();
+    //     let elapsed = start.elapsed().as_nanos();
 
-        println!(
-            "Data: {} {}",
-            format_bytes(memory.data_size(&mut store)),
-            elapsed,
-        );
-    }
+    //     println!(
+    //         "Data: {} {}",
+    //         format_bytes(memory.data_size(&mut store)),
+    //         elapsed,
+    //     );
+    // }
 
     // for _ in 0..100 {
     //     let now = Instant::now();

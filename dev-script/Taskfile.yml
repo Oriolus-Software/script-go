@@ -1,0 +1,13 @@
+# https://taskfile.dev
+
+version: "3"
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  default:
+    cmds:
+      - tinygo build -o dev-script.wasm -target=wasm-unknown .
+      - cp dev-script.wasm ~/.local/share/LOTUS-Simulator/overrides/123/456/dev-script.wasm
+    silent: true
