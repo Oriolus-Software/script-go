@@ -3,4 +3,3 @@
 - action (register or state is fishy)
 - messages
 - gizmo
-- textures
