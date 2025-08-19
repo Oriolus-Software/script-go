@@ -5,16 +5,13 @@ import (
 
 	"github.com/oriolus-software/script-go/input"
 	"github.com/oriolus-software/script-go/log"
+	"github.com/oriolus-software/script-go/message"
 	"github.com/oriolus-software/script-go/time"
 	"github.com/oriolus-software/script-go/vars"
 )
 
-func init() {
-	input.RegisterAction("move_forward", "KeysdasW")
-}
-
 //export init
-func script_init() {
+func ScriptInit() {
 	vars.SetI64("on_init_i64", 1)
 	vars.SetBool("on_init_bool_true", true)
 	vars.SetBool("on_init_bool_false", false)
@@ -22,12 +19,16 @@ func script_init() {
 }
 
 //export tick
-func tick() {
+func Tick() {
 	// for range 4000 {
 	// 	vars.SetI64("on_tick_i64", int64(time.TicksAlive()))
 	// }
 
 	// log.Info(fmt.Sprintf("hello world on tick %d", time.TicksAlive()))
+
+	message.Handler = func(in message.Message) {
+		log.Info(fmt.Sprintf("received message: %v", in))
+	}
 
 	vars.SetI64("on_tick_i64", int64(time.TicksAlive()))
 	vars.SetF64("on_tick_f64", float64(time.TicksAlive()))
@@ -41,11 +42,7 @@ func tick() {
 	vars.SetString("game_time", fmt.Sprintf("%v", time.GetGameTime()))
 }
 
-//export late_tick
-func late_tick() {}
-
 //export register_actions
-func register_actions() {
-	log.Info("registering actions")
-	input.RegisterAction("move_forward", "key_s")
+func RegisterActions() {
+	input.RegisterAction("move_forward", "key_w")
 }
