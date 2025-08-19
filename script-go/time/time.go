@@ -1,5 +1,7 @@
 package time
 
+import "time"
+
 //go:wasm-module time
 //export delta_f64
 func Delta64() float64
@@ -8,7 +10,14 @@ func Delta64() float64
 //export ticks_alive
 func TicksAlive() uint64
 
-//TODO: game_time
+// gameTime in unix microseconds
+//
 //go:wasm-module time
 //export game_time
-// func gameTime() int64
+func gameTime() int64
+
+type GameTime int64
+
+func GetGameTime() time.Time {
+	return time.UnixMicro(gameTime())
+}

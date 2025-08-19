@@ -5,6 +5,3 @@
 - font
 - gizmo
 - textures
-- time(game_time)
-- var(get/set content_id)
-- vehicle

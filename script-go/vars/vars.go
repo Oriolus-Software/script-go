@@ -1,6 +1,7 @@
 package vars
 
 import (
+	"github.com/oriolus-software/script-go/assets"
 	"github.com/oriolus-software/script-go/internal/ffi"
 )
 
@@ -66,4 +67,12 @@ func set_string(name uint64, value uint64)
 
 func SetString(name string, value string) {
 	set_string(ffi.Serialize(name).ToPacked(), ffi.Serialize(value).ToPacked())
+}
+
+//go:wasm-module var
+//export get_content_id
+func get_content_id(name uint64) uint64
+
+func GetContentId(name string) assets.ContentId {
+	return ffi.Deserialize[assets.ContentId](get_content_id(ffi.Serialize(name).ToPacked()))
 }

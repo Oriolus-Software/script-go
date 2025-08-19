@@ -37,6 +37,8 @@ func tick() {
 
 	vars.SetString("move_forward_state", fmt.Sprintf("%v", input.State("move_forward")))
 	vars.SetString("move_forward_state", fmt.Sprintf("%v", input.State("key_s")))
+
+	vars.SetString("game_time", fmt.Sprintf("%v", time.GetGameTime()))
 }
 
 //export late_tick
