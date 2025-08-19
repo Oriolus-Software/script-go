@@ -269,6 +269,7 @@ func (r *Reader) ReadString() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return string(data), nil
 }
 
@@ -308,7 +309,15 @@ func (r *Reader) readStringBytes() ([]byte, error) {
 		}
 	}
 
-	return r.readBytes(int(length))
+	buf, err := r.readBytes(int(length))
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]byte, len(buf))
+	copy(result, buf)
+
+	return result, nil
 }
 
 // ReadBinary reads binary data
@@ -343,7 +352,14 @@ func (r *Reader) ReadBinary() ([]byte, error) {
 		return nil, fmt.Errorf("expected binary but got 0x%02x", b)
 	}
 
-	return r.readBytes(int(length))
+	buf, err := r.readBytes(int(length))
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]byte, len(buf))
+	copy(result, buf)
+	return result, nil
 }
 
 // ReadArrayHeader reads an array header and returns the number of elements
