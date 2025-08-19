@@ -45,12 +45,14 @@ const (
 
 	// array
 	FixarrayMask = 0x90
+	FixarrayEnd  = 0x9f
 	FixarrayMax  = 0x0f
 	Array16      = 0xdc
 	Array32      = 0xdd
 
 	// map
 	FixmapMask = 0x80
+	FixmapEnd  = 0x8f
 	FixmapMax  = 0x0f
 	Map16      = 0xde
 	Map32      = 0xdf

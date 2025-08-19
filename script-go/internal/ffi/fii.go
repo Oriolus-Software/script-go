@@ -3,7 +3,7 @@ package ffi
 import (
 	"unsafe"
 
-	scriptgo "github.com/oriolus-software/script-go"
+	"github.com/oriolus-software/script-go/internal/alloc"
 	"github.com/oriolus-software/script-go/internal/msgpack"
 )
 
@@ -18,7 +18,7 @@ func Serialize(val any) FfiObject {
 		panic(err)
 	}
 
-	memPtr := scriptgo.Allocate(len(data))
+	memPtr := alloc.Allocate(len(data))
 	buf := unsafe.Slice((*byte)(memPtr), len(data))
 	copy(buf, data)
 
