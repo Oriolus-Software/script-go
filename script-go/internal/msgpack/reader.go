@@ -26,8 +26,12 @@ func NewReader(r io.Reader) *Reader {
 var arena *alloc.Arena = alloc.NewArena(2048)
 
 func (r *Reader) readByte() (byte, error) {
-	buf := arena.AllocateSlice(1)
-	_, err := io.ReadFull(r.r, buf)
+	if b, ok := r.r.(io.ByteReader); ok {
+		return b.ReadByte()
+	}
+
+	var buf [1]byte
+	_, err := io.ReadFull(r.r, buf[:])
 	if err != nil {
 		return 0, err
 	}

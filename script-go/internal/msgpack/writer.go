@@ -3,6 +3,7 @@ package msgpack
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"math"
 	"reflect"
@@ -342,7 +343,6 @@ func (w *Writer) WriteStruct(v any) error {
 		fields[fieldName] = fieldValue
 	}
 
-	// Write as map
 	if err := w.WriteMapHeader(len(fields)); err != nil {
 		return err
 	}
@@ -375,7 +375,6 @@ func (w *Writer) encodeValue(rv reflect.Value) error {
 		return w.WriteString(rv.String())
 	case reflect.Slice:
 		if rv.Type().Elem().Kind() == reflect.Uint8 {
-			// Handle []byte as binary data
 			return w.WriteBinary(rv.Bytes())
 		}
 		return w.encodeSlice(rv)
@@ -396,8 +395,7 @@ func (w *Writer) encodeValue(rv reflect.Value) error {
 	case reflect.Struct:
 		return w.WriteStruct(rv.Interface())
 	default:
-		// For unsupported types, try to convert to string
-		return w.WriteString(rv.String())
+		return fmt.Errorf("unsupported type: %s", rv.Type())
 	}
 }
 

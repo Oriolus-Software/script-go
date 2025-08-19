@@ -622,6 +622,39 @@ func BenchmarkWriteStruct(b *testing.B) {
 	}
 }
 
+type Vector3 struct {
+	X float32 `msgpack:"x"`
+	Y float32 `msgpack:"y"`
+	Z float32 `msgpack:"z"`
+}
+
+func (t *Vector3) MarshalMsgpack(w *msgpack.Writer) error {
+	w.WriteArrayHeader(3)
+	w.WriteFloat32(t.X)
+	w.WriteFloat32(t.Y)
+	w.WriteFloat32(t.Z)
+	return nil
+}
+
+func BenchmarkWriteMarshalerVector3(b *testing.B) {
+	obj := &Vector3{
+		X: 1.0,
+		Y: 2.0,
+		Z: 3.0,
+	}
+
+	buf := &bytes.Buffer{}
+	w := msgpack.NewWriter(buf)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		buf.Reset()
+		if err := w.WriteStruct(obj); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func BenchmarkWriteMarshaler(b *testing.B) {
 	obj := &testWriterMarshalerStruct{
 		Foo: "foo",

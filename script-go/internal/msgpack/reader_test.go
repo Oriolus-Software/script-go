@@ -2,6 +2,7 @@ package msgpack_test
 
 import (
 	"bytes"
+	"io"
 	"testing"
 
 	"github.com/oriolus-software/script-go/internal/msgpack"
@@ -554,178 +555,135 @@ func TestSerializeDeserialize(t *testing.T) {
 
 // Benchmarks
 
-func BenchmarkReadNil(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	w.WriteNil()
-	data := buf.Bytes()
+func readBenchmarkSetup(b *testing.B, val any) (r *bytes.Reader, mr *msgpack.Reader) {
+	data, err := msgpack.Serialize(val)
+	if err != nil {
+		b.Fatal(err)
+	}
+	r = bytes.NewReader(data)
+	mr = msgpack.NewReader(r)
 
 	b.ResetTimer()
+	return
+}
+
+func BenchmarkReadNil(b *testing.B) {
+	r, mr := readBenchmarkSetup(b, nil)
+
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
-		if err := r.ReadNil(); err != nil {
+		r.Seek(0, io.SeekStart)
+		if err := mr.ReadNil(); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkReadBool(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	w.WriteBool(true)
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, true)
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
-		if _, err := r.ReadBool(); err != nil {
+		r.Seek(0, io.SeekStart)
+		if _, err := mr.ReadBool(); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkReadInteger(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	w.WriteInt(42)
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, int64(42))
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
-		if _, err := r.ReadInt(); err != nil {
+		r.Seek(0, io.SeekStart)
+		if _, err := mr.ReadInt(); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkReadUint(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	w.WriteUint(42)
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, uint64(42))
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
-		if _, err := r.ReadUint(); err != nil {
+		r.Seek(0, io.SeekStart)
+		if _, err := mr.ReadUint(); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkReadFloat32(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	w.WriteFloat32(3.14159)
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, float32(3.14159))
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
-		if _, err := r.ReadFloat32(); err != nil {
+		r.Seek(0, io.SeekStart)
+		if _, err := mr.ReadFloat32(); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkReadFloat64(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	w.WriteFloat64(3.141592653589793)
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, float64(3.141592653589793))
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
-		if _, err := r.ReadFloat64(); err != nil {
+		r.Seek(0, io.SeekStart)
+		if _, err := mr.ReadFloat64(); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkReadString(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	w.WriteString("my_variable_name")
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, "my_variable_name")
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
-		if _, err := r.ReadString(); err != nil {
+		r.Seek(0, io.SeekStart)
+		if _, err := mr.ReadString(); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkReadBinary(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	testData := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	w.WriteBinary(testData)
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
-		if _, err := r.ReadBinary(); err != nil {
+		r.Seek(0, io.SeekStart)
+		if _, err := mr.ReadBinary(); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkReadArray(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	w.WriteArrayHeader(3)
-	w.WriteInt(1)
-	w.WriteString("hello")
-	w.WriteBool(true)
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, []any{1, "hello", true})
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
-		if _, err := r.ReadArray(); err != nil {
+		r.Seek(0, io.SeekStart)
+		if _, err := mr.ReadArray(); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkReadMap(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	w.WriteMapHeader(2)
-	w.WriteString("name")
-	w.WriteString("John")
-	w.WriteString("age")
-	w.WriteInt(30)
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, map[string]any{"name": "John", "age": 30})
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
-		if _, err := r.ReadMap(); err != nil {
+		r.Seek(0, io.SeekStart)
+		if _, err := mr.ReadMap(); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkReadValue(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	w.WriteMapHeader(2)
-	w.WriteString("name")
-	w.WriteString("John")
-	w.WriteString("age")
-	w.WriteInt(30)
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, map[string]any{"name": "John", "age": 30})
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
-		if _, err := r.ReadValue(); err != nil {
+		r.Seek(0, io.SeekStart)
+		if _, err := mr.ReadValue(); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -737,58 +695,36 @@ func BenchmarkDecodeStruct(b *testing.B) {
 		Age  int    `msgpack:"age"`
 	}
 
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	original := TestStruct{Name: "John", Age: 30}
-	w.WriteStruct(original)
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, TestStruct{Name: "John", Age: 30})
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
+		r.Seek(0, io.SeekStart)
 		var result TestStruct
-		if err := r.Decode(&result); err != nil {
+		if err := mr.Decode(&result); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkDecodeSlice(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	original := []int{1, 2, 3, 4, 5}
-	w.WriteArrayHeader(len(original))
-	for _, v := range original {
-		w.WriteInt(int64(v))
-	}
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, []int{1, 2, 3, 4, 5})
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
+		r.Seek(0, io.SeekStart)
 		var result []int
-		if err := r.Decode(&result); err != nil {
+		if err := mr.Decode(&result); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkDecodeMap(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	original := map[string]int{"one": 1, "two": 2, "three": 3}
-	w.WriteMapHeader(len(original))
-	for k, v := range original {
-		w.WriteString(k)
-		w.WriteInt(int64(v))
-	}
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, map[string]int{"one": 1, "two": 2, "three": 3})
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
+		r.Seek(0, io.SeekStart)
 		var result map[string]int
-		if err := r.Decode(&result); err != nil {
+		if err := mr.Decode(&result); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -801,41 +737,28 @@ func BenchmarkDeserialize(b *testing.B) {
 		Values []int  `msgpack:"values"`
 	}
 
-	original := TestStruct{
+	r, mr := readBenchmarkSetup(b, TestStruct{
 		Name:   "Alice",
 		Age:    25,
 		Values: []int{1, 2, 3},
-	}
+	})
 
-	data, err := msgpack.Serialize(original)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		r.Seek(0, io.SeekStart)
 		var result TestStruct
-		if err := msgpack.Deserialize(data, &result); err != nil {
+		if err := mr.Decode(&result); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
 func BenchmarkUnmarshaler(b *testing.B) {
-	buf := &bytes.Buffer{}
-	w := msgpack.NewWriter(buf)
-	w.WriteMapHeader(2)
-	w.WriteString("foo")
-	w.WriteString("hello")
-	w.WriteString("bar")
-	w.WriteInt(42)
-	data := buf.Bytes()
+	r, mr := readBenchmarkSetup(b, testUnmarshalerStruct{Foo: "hello", Bar: 42})
 
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r := msgpack.NewReader(bytes.NewReader(data))
+		r.Seek(0, io.SeekStart)
 		var result testUnmarshalerStruct
-		if err := r.Decode(&result); err != nil {
+		if err := mr.Decode(&result); err != nil {
 			b.Fatal(err)
 		}
 	}
