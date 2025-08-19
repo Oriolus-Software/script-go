@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/oriolus-software/script-go/internal/msgpack"
+	orig "github.com/vmihailenco/msgpack/v5"
 )
 
 func TestRoundTripNil(t *testing.T) {
@@ -551,6 +552,27 @@ func TestSerializeDeserialize(t *testing.T) {
 			t.Fatalf("Nested[%s]: expected %v, got %v", k, v, result.Nested[k])
 		}
 	}
+}
+
+// Fuzz tests
+
+func FuzzReadFloat64(f *testing.F) {
+	f.Add(float64(3.141592653589793))
+	f.Fuzz(func(b *testing.T, val float64) {
+		self, err := msgpack.Serialize(val)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		o, err := orig.Marshal(val)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		if !bytes.Equal(self, o) {
+			b.Fatalf("expected %v, got %v", o, self)
+		}
+	})
 }
 
 // Benchmarks

@@ -8,7 +8,6 @@ import (
 // Use a small static ring buffer hostArena in linear memory. This avoids GC
 // interaction and keeps pointers stable within a single host call.
 var hostArena *Arena = NewArena(8 * 1024) // 8 KiB static arena
-var arenaOffset int
 
 //export allocate
 func Allocate(size int) unsafe.Pointer {
@@ -41,17 +40,17 @@ func (a *Arena) Allocate(size int) unsafe.Pointer {
 	}
 	// 8-byte alignment
 	const align = 8
-	if rem := arenaOffset % align; rem != 0 {
-		arenaOffset += align - rem
+	if rem := a.offset % align; rem != 0 {
+		a.offset += align - rem
 	}
 	// Check if we need to wrap around AFTER alignment
-	if arenaOffset+size > a.len {
-		arenaOffset = 0
+	if a.offset+size > a.len {
+		a.offset = 0
 		// No need to re-align since we're starting at 0, which is already aligned
 	}
 
 	ptr := unsafe.Pointer(&a.data[a.offset])
-	arenaOffset += size
+	a.offset += size
 	return ptr
 }
 

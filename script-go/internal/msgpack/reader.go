@@ -432,6 +432,29 @@ func (r *Reader) ReadArray() ([]any, error) {
 	return arr, nil
 }
 
+// ReadTypedSlice reads an array of a specific type
+func ReadTypedSlice[T any](r *Reader, s *[]T) error {
+	length, err := r.ReadArrayHeader()
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < length; i++ {
+		val, err := r.ReadValue()
+		if err != nil {
+			return err
+		}
+
+		typedVal, ok := val.(T)
+		if !ok {
+			return fmt.Errorf("expected %T but got %T", reflect.TypeOf(s).Elem(), reflect.TypeOf(val))
+		}
+
+		*s = append(*s, typedVal)
+	}
+	return nil
+}
+
 // ReadMap reads an entire map
 func (r *Reader) ReadMap() (map[string]any, error) {
 	length, err := r.ReadMapHeader()
