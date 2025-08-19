@@ -3,7 +3,7 @@ package vars
 import (
 	"runtime"
 
-	"github.com/oriolus-software/script-go/ffi"
+	"github.com/oriolus-software/script-go/internal/ffi"
 )
 
 //go:wasm-module var

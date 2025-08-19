@@ -8,6 +8,6 @@ vars:
 tasks:
   default:
     cmds:
-      - tinygo build -o dev-script.wasm -target=wasm-unknown .
+      - tinygo build -o dev-script.wasm -target=wasm-unknown -gc=precise .
       - cp dev-script.wasm ~/.local/share/LOTUS-Simulator/overrides/123/456/dev-script.wasm
     silent: true

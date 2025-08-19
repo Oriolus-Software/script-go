@@ -12,6 +12,10 @@ type Writer struct {
 	w io.Writer
 }
 
+type Marshaler interface {
+	MarshalMsgpack(w *Writer) error
+}
+
 func NewWriter(w io.Writer) *Writer {
 	return &Writer{w: w}
 }
@@ -298,6 +302,63 @@ func (w *Writer) WriteMap(m map[string]any) error {
 	return nil
 }
 
+// WriteStruct writes a struct as a msgpack map
+func (w *Writer) WriteStruct(v any) error {
+	if m, ok := v.(Marshaler); ok {
+		return m.MarshalMsgpack(w)
+	}
+
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return w.WriteNil()
+		}
+		rv = rv.Elem()
+	}
+
+	if rv.Kind() != reflect.Struct {
+		return w.Encode(v) // fallback to general encoding
+	}
+
+	rt := rv.Type()
+	fields := make(map[string]reflect.Value)
+
+	// Collect exported fields
+	for i := 0; i < rv.NumField(); i++ {
+		field := rt.Field(i)
+		fieldValue := rv.Field(i)
+
+		// Skip unexported fields
+		if !field.IsExported() {
+			continue
+		}
+
+		// Get field name from struct tag or use field name
+		fieldName := field.Name
+		if tag := field.Tag.Get("msgpack"); tag != "" && tag != "-" {
+			fieldName = tag
+		}
+
+		fields[fieldName] = fieldValue
+	}
+
+	// Write as map
+	if err := w.WriteMapHeader(len(fields)); err != nil {
+		return err
+	}
+
+	for name, value := range fields {
+		if err := w.WriteString(name); err != nil {
+			return err
+		}
+		if err := w.encodeValue(value); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (w *Writer) encodeValue(rv reflect.Value) error {
 	switch rv.Kind() {
 	case reflect.Bool:
@@ -332,6 +393,8 @@ func (w *Writer) encodeValue(rv reflect.Value) error {
 			return w.WriteNil()
 		}
 		return w.encodeValue(rv.Elem())
+	case reflect.Struct:
+		return w.WriteStruct(rv.Interface())
 	default:
 		// For unsupported types, try to convert to string
 		return w.WriteString(rv.String())

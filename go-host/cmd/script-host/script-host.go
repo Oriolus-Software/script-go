@@ -28,6 +28,15 @@ func (h *ScriptHost) LoadModule(ctx context.Context, data []byte) (api.Module, e
 
 	v := h.r.NewHostModuleBuilder("var")
 	if _, err := v.NewFunctionBuilder().WithFunc(func(ctx context.Context, m api.Module, a uint64, b int64) {
+		// Debug: inspect packed pointer/length and raw bytes
+		ptr := uint32(a & 0xFFFFFFFF)
+		l := uint32(a >> 32)
+		data, ok := m.Memory().Read(ptr, l)
+		if !ok {
+			panic("failed to read memory")
+		}
+		fmt.Printf("set_i64 raw: ptr=0x%08x len=%d bytes=%v memSize=%d\n", ptr, l, data, m.Memory().Size())
+
 		var name string
 		FromPacked(m, a, &name)
 
