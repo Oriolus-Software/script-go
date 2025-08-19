@@ -4,4 +4,5 @@ use (
 	./dev-script
 	./go-host
 	./script-go
+	./debug-script
 )

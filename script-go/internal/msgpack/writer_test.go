@@ -214,52 +214,35 @@ func TestWriteBinary(t *testing.T) {
 	}
 }
 
-func TestWriteArrayHeader(t *testing.T) {
-	tests := []int{0, 1, 15, 16, 65535, 65536}
-
-	for _, test := range tests {
-		buf := &bytes.Buffer{}
-		w := msgpack.NewWriter(buf)
-
-		err := w.WriteArrayHeader(test)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// Verify we can read the header back
-		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
-		result, err := r.ReadArrayHeader()
-		if err != nil {
-			t.Fatalf("failed to read array header for length %d: %v", test, err)
-		}
-
-		if result != test {
-			t.Fatalf("length %d: expected %d, got %d", test, test, result)
-		}
+func TestWriteArray(t *testing.T) {
+	tests := [][]any{
+		{},
+		{1, 2, 3},
+		{1, "two", 3.0, []any{4, 5, 6}},
+		{1, "two", map[string]any{"three": 4}},
 	}
-}
 
-func TestWriteMapHeader(t *testing.T) {
-	tests := []int{0, 1, 15, 16, 65535, 65536}
+	for i := range 100 {
+		arr := make([]any, 0, i)
+		for j := 0; j < i; j++ {
+			arr = append(arr, j)
+		}
+		tests = append(tests, arr)
+	}
 
-	for _, test := range tests {
-		buf := &bytes.Buffer{}
-		w := msgpack.NewWriter(buf)
-
-		err := w.WriteMapHeader(test)
+	for i, test := range tests {
+		self, err := msgpack.Serialize(test)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		// Verify we can read the header back
-		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
-		result, err := r.ReadMapHeader()
+		orig, err := orig.Marshal(test)
 		if err != nil {
-			t.Fatalf("failed to read map header for length %d: %v", test, err)
+			t.Fatal(err)
 		}
 
-		if result != test {
-			t.Fatalf("length %d: expected %d, got %d", test, test, result)
+		if !bytes.Equal(self, orig) {
+			t.Fatalf("test %d: expected %v, got %v", i, orig, self)
 		}
 	}
 }
