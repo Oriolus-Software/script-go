@@ -16,11 +16,13 @@ type registerAction struct {
 	DefaultKey string `msgpack:"default_key"`
 }
 
+var actions = make(map[string]registerAction)
+
 func RegisterAction(id, defaultKey string) {
-	register_action(ffi.Serialize(registerAction{
+	actions[id] = registerAction{
 		Id:         id,
 		DefaultKey: defaultKey,
-	}).ToPacked())
+	}
 }
 
 //go:wasm-module action
@@ -40,4 +42,11 @@ func State(actionId string) ActionState {
 	var state ActionState
 	ffi.DeserializeInto(getState(ffi.Serialize(actionId).ToPacked()), &state)
 	return state
+}
+
+//export register_actions
+func register_actions() {
+	for _, action := range actions {
+		register_action(ffi.Serialize(action).ToPacked())
+	}
 }

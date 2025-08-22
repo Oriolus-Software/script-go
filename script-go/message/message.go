@@ -2,6 +2,7 @@ package message
 
 import (
 	"github.com/oriolus-software/script-go/internal/ffi"
+	"github.com/oriolus-software/script-go/internal/msgpack"
 )
 
 type Meta struct {
@@ -14,6 +15,67 @@ type RawMessage struct {
 	Meta   Meta          `msgpack:"meta"`
 	Source MessageSource `msgpack:"source"`
 	Value  any           `msgpack:"value"`
+}
+
+func (m *RawMessage) MarshalMsgpack(w *msgpack.Writer) error {
+	w.WriteMapHeader(3)
+
+	if err := w.WriteString("meta"); err != nil {
+		return err
+	}
+
+	{
+		header := 2
+		if m.Meta.Bus != "" {
+			header++
+		}
+
+		w.WriteMapHeader(header)
+
+		if err := w.WriteString("namespace"); err != nil {
+			return err
+		}
+
+		if err := w.WriteString(m.Meta.Namespace); err != nil {
+			return err
+		}
+
+		if err := w.WriteString("identifier"); err != nil {
+			return err
+		}
+
+		if err := w.WriteString(m.Meta.Identifier); err != nil {
+			return err
+		}
+
+		if m.Meta.Bus != "" {
+			if err := w.WriteString("bus"); err != nil {
+				return err
+			}
+
+			if err := w.WriteString(m.Meta.Bus); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err := w.WriteString("source"); err != nil {
+		return err
+	}
+
+	if err := w.WriteStruct(m.Source); err != nil {
+		return err
+	}
+
+	if err := w.WriteString("value"); err != nil {
+		return err
+	}
+
+	if err := w.Encode(m.Value); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type MessageSource struct {
@@ -93,10 +155,9 @@ func Send(message Message, targets ...Target) {
 		tgts[i] = target.ToMessageTarget()
 	}
 
-	m := ffi.Serialize(RawMessage{
-		Meta:   message.Meta(),
-		Source: MessageSource{},
-		Value:  message,
+	m := ffi.Serialize(&RawMessage{
+		Meta:  message.Meta(),
+		Value: message,
 	})
 	t := ffi.Serialize(tgts)
 	send(t.ToPacked(), m.ToPacked())

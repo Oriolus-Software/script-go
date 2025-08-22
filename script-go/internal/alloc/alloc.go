@@ -7,7 +7,7 @@ import (
 
 // Use a small static ring buffer hostArena in linear memory. This avoids GC
 // interaction and keeps pointers stable within a single host call.
-var hostArena *Arena = NewArena(8 * 1024) // 8 KiB static arena
+var hostArena *Arena = NewArena(32 * 1024) // 8 KiB static arena
 
 //export allocate
 func Allocate(size int) unsafe.Pointer {

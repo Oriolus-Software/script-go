@@ -3,6 +3,7 @@ package msgpack
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -26,8 +27,11 @@ func (w *Writer) write(data []byte) error {
 	return err
 }
 
+var writeTemp = make([]byte, 8)
+
 func (w *Writer) writeByte(b byte) error {
-	return w.write([]byte{b})
+	writeTemp[0] = b
+	return w.write(writeTemp[:1])
 }
 
 func (w *Writer) writeUint8(v uint8) error {
@@ -35,21 +39,18 @@ func (w *Writer) writeUint8(v uint8) error {
 }
 
 func (w *Writer) writeUint16(v uint16) error {
-	buf := make([]byte, 2)
-	binary.BigEndian.PutUint16(buf, v)
-	return w.write(buf)
+	binary.BigEndian.PutUint16(writeTemp[:2], v)
+	return w.write(writeTemp[:2])
 }
 
 func (w *Writer) writeUint32(v uint32) error {
-	buf := make([]byte, 4)
-	binary.BigEndian.PutUint32(buf, v)
-	return w.write(buf)
+	binary.BigEndian.PutUint32(writeTemp[:4], v)
+	return w.write(writeTemp[:4])
 }
 
 func (w *Writer) writeUint64(v uint64) error {
-	buf := make([]byte, 8)
-	binary.BigEndian.PutUint64(buf, v)
-	return w.write(buf)
+	binary.BigEndian.PutUint64(writeTemp[:8], v)
+	return w.write(writeTemp[:8])
 }
 
 func (w *Writer) writeInt8(v int8) error {
@@ -303,6 +304,41 @@ func (w *Writer) WriteMap(m map[string]any) error {
 	return nil
 }
 
+var structMeta = make(map[reflect.Type][]StructField)
+
+type StructField struct {
+	Exported bool
+	Name     string
+}
+
+func getStructMeta(rt reflect.Type) []StructField {
+	if meta, ok := structMeta[rt]; ok {
+		return meta
+	}
+
+	meta := make([]StructField, 0)
+
+	for i := 0; i < rt.NumField(); i++ {
+		field := rt.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+
+		fieldName := field.Name
+		if tag := field.Tag.Get("msgpack"); tag != "" && tag != "-" {
+			fieldName = tag
+		}
+
+		meta = append(meta, StructField{
+			Exported: field.IsExported(),
+			Name:     fieldName,
+		})
+	}
+
+	structMeta[rt] = meta
+	return meta
+}
+
 // WriteStruct writes a struct as a msgpack map
 func (w *Writer) WriteStruct(v any) error {
 	if m, ok := v.(Marshaler); ok {
@@ -318,40 +354,27 @@ func (w *Writer) WriteStruct(v any) error {
 	}
 
 	if rv.Kind() != reflect.Struct {
-		return w.Encode(v) // fallback to general encoding
+		return errors.New("not a struct")
 	}
 
 	rt := rv.Type()
-	fields := make(map[string]reflect.Value)
-
-	// Collect exported fields
-	for i := 0; i < rv.NumField(); i++ {
-		field := rt.Field(i)
-		fieldValue := rv.Field(i)
-
-		// Skip unexported fields
-		if !field.IsExported() {
-			continue
-		}
-
-		// Get field name from struct tag or use field name
-		fieldName := field.Name
-		if tag := field.Tag.Get("msgpack"); tag != "" && tag != "-" {
-			fieldName = tag
-		}
-
-		fields[fieldName] = fieldValue
-	}
+	fields := getStructMeta(rt)
 
 	if err := w.WriteMapHeader(len(fields)); err != nil {
 		return err
 	}
 
-	for name, value := range fields {
-		if err := w.WriteString(name); err != nil {
+	for i, field := range fields {
+		if !field.Exported {
+			continue
+		}
+
+		fieldValue := rv.Field(i)
+
+		if err := w.WriteString(field.Name); err != nil {
 			return err
 		}
-		if err := w.encodeValue(value); err != nil {
+		if err := w.encodeValue(fieldValue); err != nil {
 			return err
 		}
 	}
@@ -360,6 +383,11 @@ func (w *Writer) WriteStruct(v any) error {
 }
 
 func (w *Writer) encodeValue(rv reflect.Value) error {
+	marshaler, ok := rv.Interface().(Marshaler)
+	if ok {
+		return marshaler.MarshalMsgpack(w)
+	}
+
 	switch rv.Kind() {
 	case reflect.Bool:
 		return w.WriteBool(rv.Bool())
@@ -443,11 +471,6 @@ func (w *Writer) encodeMap(rv reflect.Value) error {
 		}
 	}
 	return nil
-}
-
-// Legacy method for compatibility
-func (w *Writer) String(s string) error {
-	return w.WriteString(s)
 }
 
 // Serialize is a convenience function that encodes any value to msgpack bytes

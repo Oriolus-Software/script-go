@@ -7,45 +7,33 @@ import (
 	"io"
 	"math"
 	"reflect"
-
-	"github.com/oriolus-software/script-go/internal/alloc"
 )
 
 type Reader struct {
-	r io.Reader
+	r io.ReadSeeker
 }
 
 type Unmarshaler interface {
 	UnmarshalMsgpack(r *Reader) error
 }
 
-func NewReader(r io.Reader) *Reader {
+func NewReader(r io.ReadSeeker) *Reader {
 	return &Reader{r: r}
 }
 
-var arena *alloc.Arena = alloc.NewArena(2048)
+var readBuf = make([]byte, 8)
 
 func (r *Reader) readByte() (byte, error) {
 	if b, ok := r.r.(io.ByteReader); ok {
 		return b.ReadByte()
 	}
 
-	var buf [1]byte
-	_, err := io.ReadFull(r.r, buf[:])
+	buf := readBuf[:1]
+	_, err := io.ReadFull(r.r, buf)
 	if err != nil {
 		return 0, err
 	}
 	return buf[0], nil
-}
-
-func (r *Reader) readBytes(n int) ([]byte, error) {
-	if n <= 0 {
-		return []byte{}, nil
-	}
-
-	buf := arena.AllocateSlice(n)
-	_, err := io.ReadFull(r.r, buf)
-	return buf, err
 }
 
 func (r *Reader) readUint8() (uint8, error) {
@@ -54,7 +42,8 @@ func (r *Reader) readUint8() (uint8, error) {
 }
 
 func (r *Reader) readUint16() (uint16, error) {
-	buf, err := r.readBytes(2)
+	buf := readBuf[:2]
+	_, err := io.ReadFull(r.r, buf)
 	if err != nil {
 		return 0, err
 	}
@@ -62,7 +51,8 @@ func (r *Reader) readUint16() (uint16, error) {
 }
 
 func (r *Reader) readUint32() (uint32, error) {
-	buf, err := r.readBytes(4)
+	buf := readBuf[:4]
+	_, err := io.ReadFull(r.r, buf)
 	if err != nil {
 		return 0, err
 	}
@@ -70,7 +60,8 @@ func (r *Reader) readUint32() (uint32, error) {
 }
 
 func (r *Reader) readUint64() (uint64, error) {
-	buf, err := r.readBytes(8)
+	buf := readBuf[:8]
+	_, err := io.ReadFull(r.r, buf)
 	if err != nil {
 		return 0, err
 	}
@@ -313,15 +304,9 @@ func (r *Reader) readStringBytes() ([]byte, error) {
 		}
 	}
 
-	buf, err := r.readBytes(int(length))
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]byte, len(buf))
-	copy(result, buf)
-
-	return result, nil
+	buf := make([]byte, length)
+	_, err = io.ReadFull(r.r, buf)
+	return buf, err
 }
 
 // ReadBinary reads binary data
@@ -356,14 +341,13 @@ func (r *Reader) ReadBinary() ([]byte, error) {
 		return nil, fmt.Errorf("expected binary but got 0x%02x", b)
 	}
 
-	buf, err := r.readBytes(int(length))
+	buf := make([]byte, length)
+	_, err = io.ReadFull(r.r, buf)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]byte, len(buf))
-	copy(result, buf)
-	return result, nil
+	return buf, nil
 }
 
 // ReadArrayHeader reads an array header and returns the number of elements
@@ -493,14 +477,9 @@ func (r *Reader) ReadValue() (any, error) {
 		return nil, err
 	}
 
-	// Put the byte back by creating a new reader with this byte prepended
-	if seeker, ok := r.r.(io.Seeker); ok {
-		if _, err := seeker.Seek(-1, io.SeekCurrent); err != nil {
-			return nil, err
-		}
-	} else {
-		// For non-seekable readers, we need to create a multi-reader
-		r.r = io.MultiReader(bytes.NewReader([]byte{b}), r.r)
+	// Put the byte back
+	if _, err := r.r.Seek(-1, io.SeekCurrent); err != nil {
+		return nil, err
 	}
 
 	// Determine type based on the first byte
@@ -564,12 +543,8 @@ func (r *Reader) decodeValue(rv reflect.Value) error {
 	}
 
 	// Put the byte back
-	if seeker, ok := r.r.(io.Seeker); ok {
-		if _, err := seeker.Seek(-1, io.SeekCurrent); err != nil {
-			return err
-		}
-	} else {
-		r.r = io.MultiReader(bytes.NewReader([]byte{b}), r.r)
+	if _, err := r.r.Seek(-1, io.SeekCurrent); err != nil {
+		return err
 	}
 
 	// Handle nil case
@@ -610,19 +585,20 @@ func (r *Reader) decodeValue(rv reflect.Value) error {
 		rv.SetUint(val)
 	case reflect.Float32, reflect.Float64:
 		// Try reading as float first
-		if b == Float32 {
+		switch b {
+		case Float32:
 			val, err := r.ReadFloat32()
 			if err != nil {
 				return err
 			}
 			rv.SetFloat(float64(val))
-		} else if b == Float64 {
+		case Float64:
 			val, err := r.ReadFloat64()
 			if err != nil {
 				return err
 			}
 			rv.SetFloat(val)
-		} else {
+		default:
 			// Fallback to integer and convert
 			val, err := r.ReadInt()
 			if err != nil {
@@ -746,20 +722,15 @@ func (r *Reader) decodeStruct(rv reflect.Value) error {
 
 	rt := rv.Type()
 	fields := make(map[string]reflect.Value)
+	fieldMetas := getStructMeta(rt)
 
 	// Build field map
-	for i := 0; i < rt.NumField(); i++ {
-		field := rt.Field(i)
-		if !field.IsExported() {
+	for i, field := range fieldMetas {
+		if !field.Exported {
 			continue
 		}
 
-		fieldName := field.Name
-		if tag := field.Tag.Get("msgpack"); tag != "" && tag != "-" {
-			fieldName = tag
-		}
-
-		fields[fieldName] = rv.Field(i)
+		fields[field.Name] = rv.Field(i)
 	}
 
 	// Read map entries

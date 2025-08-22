@@ -18,7 +18,7 @@ func TestRoundTripNil(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r := msgpack.NewReader(buf)
+	r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 	err = r.ReadNil()
 	if err != nil {
 		t.Fatal(err)
@@ -37,7 +37,7 @@ func TestRoundTripBool(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		r := msgpack.NewReader(buf)
+		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 		result, err := r.ReadBool()
 		if err != nil {
 			t.Fatal(err)
@@ -66,7 +66,7 @@ func TestRoundTripInt(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		r := msgpack.NewReader(buf)
+		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 		result, err := r.ReadInt()
 		if err != nil {
 			t.Fatal(err)
@@ -92,7 +92,7 @@ func TestRoundTripUint(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		r := msgpack.NewReader(buf)
+		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 		result, err := r.ReadUint()
 		if err != nil {
 			t.Fatal(err)
@@ -116,7 +116,7 @@ func TestRoundTripFloat32(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		r := msgpack.NewReader(buf)
+		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 		result, err := r.ReadFloat32()
 		if err != nil {
 			t.Fatal(err)
@@ -140,7 +140,7 @@ func TestRoundTripFloat64(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		r := msgpack.NewReader(buf)
+		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 		result, err := r.ReadFloat64()
 		if err != nil {
 			t.Fatal(err)
@@ -169,7 +169,7 @@ func TestRoundTripString(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		r := msgpack.NewReader(buf)
+		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 		result, err := r.ReadString()
 		if err != nil {
 			t.Fatal(err)
@@ -198,7 +198,7 @@ func TestRoundTripBinary(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		r := msgpack.NewReader(buf)
+		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 		result, err := r.ReadBinary()
 		if err != nil {
 			t.Fatal(err)
@@ -235,7 +235,7 @@ func TestRoundTripArray(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r := msgpack.NewReader(buf)
+	r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 	result, err := r.ReadArray()
 	if err != nil {
 		t.Fatal(err)
@@ -281,7 +281,7 @@ func TestRoundTripMap(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r := msgpack.NewReader(buf)
+	r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 	result, err := r.ReadMap()
 	if err != nil {
 		t.Fatal(err)
@@ -320,7 +320,7 @@ func TestDecodeIntoStruct(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r := msgpack.NewReader(buf)
+	r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 	var result TestStruct
 	err = r.Decode(&result)
 	if err != nil {
@@ -356,7 +356,7 @@ func TestDecodeIntoSlice(t *testing.T) {
 		}
 	}
 
-	r := msgpack.NewReader(buf)
+	r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 	var result []int
 	err = r.Decode(&result)
 	if err != nil {
@@ -400,7 +400,7 @@ func TestDecodeIntoMap(t *testing.T) {
 		}
 	}
 
-	r := msgpack.NewReader(buf)
+	r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 	var result map[string]int
 	err = r.Decode(&result)
 	if err != nil {
@@ -486,7 +486,7 @@ func TestUnmarshaler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	r := msgpack.NewReader(buf)
+	r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
 	var result testUnmarshalerStruct
 	err = r.Decode(&result)
 	if err != nil {
@@ -571,6 +571,72 @@ func FuzzReadFloat64(f *testing.F) {
 
 		if !bytes.Equal(self, o) {
 			b.Fatalf("expected %v, got %v", o, self)
+		}
+	})
+}
+
+type AllBasicTypes struct {
+	String  string
+	Int     int
+	Int8    int8
+	Int16   int16
+	Int32   int32
+	Int64   int64
+	Uint    uint
+	Uint8   uint8
+	Uint16  uint16
+	Uint32  uint32
+	Uint64  uint64
+	Float32 float32
+	Float64 float64
+	Bool    bool
+}
+
+func FuzzComplex(f *testing.F) {
+	f.Add("hello", 1, int8(2), int16(3), int32(4), int64(5), uint(6), uint8(7), uint16(8), uint32(9), uint64(10), float32(11.0), float64(12.0), true)
+
+	f.Fuzz(func(b *testing.T, val string, val2 int, val3 int8, val4 int16, val5 int32, val6 int64, val7 uint, val8 uint8, val9 uint16, val10 uint32, val11 uint64, val12 float32, val13 float64, val14 bool) {
+		all := AllBasicTypes{
+			String:  val,
+			Int:     val2,
+			Int8:    val3,
+			Int16:   val4,
+			Int32:   val5,
+			Int64:   val6,
+			Uint:    val7,
+			Uint8:   val8,
+			Uint16:  val9,
+			Uint32:  val10,
+			Uint64:  val11,
+			Float32: val12,
+			Float64: val13,
+			Bool:    val14,
+		}
+
+		selfBytes, err := msgpack.Serialize(all)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		origBytes, err := orig.Marshal(all)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		var origAll AllBasicTypes
+		err = orig.Unmarshal(origBytes, &origAll)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		var selfAll AllBasicTypes
+		err = orig.Unmarshal(selfBytes, &selfAll)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		if selfAll != origAll {
+			b.Fatalf("expected %v, got %v", all, origAll)
 		}
 	})
 }
@@ -711,7 +777,7 @@ func BenchmarkReadValue(b *testing.B) {
 	}
 }
 
-func BenchmarkDecodeStruct(b *testing.B) {
+func BenchmarkReadDecodeStruct(b *testing.B) {
 	type TestStruct struct {
 		Name string `msgpack:"name"`
 		Age  int    `msgpack:"age"`
@@ -719,40 +785,41 @@ func BenchmarkDecodeStruct(b *testing.B) {
 
 	r, mr := readBenchmarkSetup(b, TestStruct{Name: "John", Age: 30})
 
+	var result TestStruct
 	for i := 0; i < b.N; i++ {
 		r.Seek(0, io.SeekStart)
-		var result TestStruct
 		if err := mr.Decode(&result); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
-func BenchmarkDecodeSlice(b *testing.B) {
+func BenchmarkReadDecodeSlice(b *testing.B) {
 	r, mr := readBenchmarkSetup(b, []int{1, 2, 3, 4, 5})
 
+	var result []int
 	for i := 0; i < b.N; i++ {
+		result = result[:0]
 		r.Seek(0, io.SeekStart)
-		var result []int
 		if err := mr.Decode(&result); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
-func BenchmarkDecodeMap(b *testing.B) {
+func BenchmarkReadDecodeMap(b *testing.B) {
 	r, mr := readBenchmarkSetup(b, map[string]int{"one": 1, "two": 2, "three": 3})
 
+	var result map[string]int
 	for i := 0; i < b.N; i++ {
 		r.Seek(0, io.SeekStart)
-		var result map[string]int
 		if err := mr.Decode(&result); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
-func BenchmarkDeserialize(b *testing.B) {
+func BenchmarkReadDeserialize(b *testing.B) {
 	type TestStruct struct {
 		Name   string `msgpack:"name"`
 		Age    int    `msgpack:"age"`
@@ -765,21 +832,21 @@ func BenchmarkDeserialize(b *testing.B) {
 		Values: []int{1, 2, 3},
 	})
 
+	var result TestStruct
 	for i := 0; i < b.N; i++ {
 		r.Seek(0, io.SeekStart)
-		var result TestStruct
 		if err := mr.Decode(&result); err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
-func BenchmarkUnmarshaler(b *testing.B) {
+func BenchmarkReadUnmarshaler(b *testing.B) {
 	r, mr := readBenchmarkSetup(b, testUnmarshalerStruct{Foo: "hello", Bar: 42})
 
+	var result testUnmarshalerStruct
 	for i := 0; i < b.N; i++ {
 		r.Seek(0, io.SeekStart)
-		var result testUnmarshalerStruct
 		if err := mr.Decode(&result); err != nil {
 			b.Fatal(err)
 		}
