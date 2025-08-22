@@ -68,7 +68,7 @@ func TestWriteInt(t *testing.T) {
 		}
 
 		// Verify we can read it back correctly (round-trip test)
-		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
+		r := msgpack.NewReader(buf.Bytes())
 		result, err := r.ReadInt()
 		if err != nil {
 			t.Fatal(err)
@@ -95,7 +95,7 @@ func TestWriteUint(t *testing.T) {
 		}
 
 		// Verify we can read it back correctly (round-trip test)
-		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
+		r := msgpack.NewReader(buf.Bytes())
 		result, err := r.ReadUint()
 		if err != nil {
 			t.Fatal(err)
@@ -202,7 +202,7 @@ func TestWriteBinary(t *testing.T) {
 		}
 
 		// For binary data, we need to verify it can be read back correctly
-		r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
+		r := msgpack.NewReader(buf.Bytes())
 		result, err := r.ReadBinary()
 		if err != nil {
 			t.Fatal(err)
@@ -231,7 +231,7 @@ func TestWriteArray(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		self, err := msgpack.Serialize(test)
+		self, err := msgpack.Marshal(test)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -381,7 +381,7 @@ func TestWriteEncode(t *testing.T) {
 	}
 
 	// Verify it can be read back correctly
-	r := msgpack.NewReader(bytes.NewReader(buf.Bytes()))
+	r := msgpack.NewReader(buf.Bytes())
 	var result TestStruct
 	err = r.Decode(&result)
 	if err != nil {
@@ -413,13 +413,13 @@ func TestWriteSerialize(t *testing.T) {
 
 	original := TestStruct{Name: "Bob", Age: 42}
 
-	data, err := msgpack.Serialize(original)
+	data, err := msgpack.Marshal(original)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	var result TestStruct
-	err = msgpack.Deserialize(data, &result)
+	err = msgpack.Unmarshal(data, &result)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -702,7 +702,7 @@ func BenchmarkWriteSerialize(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := msgpack.Serialize(obj); err != nil {
+		if _, err := msgpack.Marshal(obj); err != nil {
 			b.Fatal(err)
 		}
 	}

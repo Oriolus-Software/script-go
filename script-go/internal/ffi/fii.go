@@ -14,7 +14,7 @@ type FfiObject struct {
 }
 
 func Serialize(val any) FfiObject {
-	data, err := msgpack.Serialize(val)
+	data, err := msgpack.Marshal(val)
 	if err != nil {
 		panic(err)
 	}
@@ -49,7 +49,7 @@ func FromPacked(packed uint64) []byte {
 func Deserialize[T any](packed uint64) T {
 	var result T
 	data := FromPacked(packed)
-	err := msgpack.Deserialize(data, &result)
+	err := msgpack.Unmarshal(data, &result)
 	if err != nil {
 		panic(err)
 	}
@@ -58,7 +58,7 @@ func Deserialize[T any](packed uint64) T {
 
 func DeserializeInto[T any](packed uint64, v *T) {
 	data := FromPacked(packed)
-	err := msgpack.Deserialize(data, v)
+	err := msgpack.Unmarshal(data, v)
 	if err != nil {
 		panic(err)
 	}

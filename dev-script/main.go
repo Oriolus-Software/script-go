@@ -7,6 +7,7 @@ import (
 	"github.com/oriolus-software/script-go/log"
 	"github.com/oriolus-software/script-go/message"
 	"github.com/oriolus-software/script-go/script"
+	"github.com/oriolus-software/script-go/time"
 	"github.com/oriolus-software/script-go/vars"
 )
 
@@ -19,6 +20,13 @@ func Init() {
 	// message.Handler = func(in message.RawMessage) {
 	// 	log.Info(fmt.Sprintf("[%d] received message: %v", time.TicksAlive(), in.Value))
 	// }
+
+	vars.SetI64("on_init_ticks_alive", int64(time.TicksAlive()))
+	vars.SetBool("on_init_bool_true", true)
+	vars.SetBool("on_init_bool_false", false)
+	vars.SetString("on_init_string", "hello")
+
+	vars.SetString("doing_things", fmt.Sprintf("%v", input.State("doing_things")))
 
 	vars.SetI64("on_init_i64", 1)
 	vars.SetBool("on_init_bool_true", true)
@@ -33,9 +41,9 @@ func Init() {
 }
 
 func Tick() {
-	// for range 4000 {
-	// 	vars.SetI64("on_tick_i64", int64(time.TicksAlive()))
-	// }
+	for range 4200 {
+		vars.SetI64("on_tick_i64", int64(time.TicksAlive()))
+	}
 
 	// log.Info(fmt.Sprintf("hello world on tick %d", time.TicksAlive()))
 
@@ -49,9 +57,9 @@ func Tick() {
 
 	// vars.SetString("game_time", fmt.Sprintf("%v", time.GetGameTime()))
 
-	for i := 0; i < 1000; i++ {
-		message.Send(TestMessage(true), message.Broadcast{IncludeSelf: false})
-	}
+	// for i := 0; i < 1000; i++ {
+	// 	message.Send(TestMessage(true), message.Broadcast{IncludeSelf: false})
+	// }
 }
 
 type TestMessage bool

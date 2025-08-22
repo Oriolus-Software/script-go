@@ -1,39 +1,41 @@
 package msgpack
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
-	"io"
 	"math"
 	"reflect"
 )
 
 type Reader struct {
-	r io.ReadSeeker
+	input  []byte
+	offset int
 }
 
 type Unmarshaler interface {
 	UnmarshalMsgpack(r *Reader) error
 }
 
-func NewReader(r io.ReadSeeker) *Reader {
-	return &Reader{r: r}
+func NewReader(input []byte) *Reader {
+	return &Reader{input: input, offset: 0}
 }
 
 var readBuf = make([]byte, 8)
 
 func (r *Reader) readByte() (byte, error) {
-	if b, ok := r.r.(io.ByteReader); ok {
-		return b.ReadByte()
-	}
+	b := r.input[r.offset]
+	r.offset++
+	return b, nil
+}
 
-	buf := readBuf[:1]
-	_, err := io.ReadFull(r.r, buf)
-	if err != nil {
-		return 0, err
+func (r *Reader) readBytes(n int) ([]byte, error) {
+	end := r.offset + n
+	if end > len(r.input) {
+		return nil, fmt.Errorf("read out of bounds")
 	}
-	return buf[0], nil
+	buf := r.input[r.offset : r.offset+n]
+	r.offset += n
+	return buf, nil
 }
 
 func (r *Reader) readUint8() (uint8, error) {
@@ -42,8 +44,7 @@ func (r *Reader) readUint8() (uint8, error) {
 }
 
 func (r *Reader) readUint16() (uint16, error) {
-	buf := readBuf[:2]
-	_, err := io.ReadFull(r.r, buf)
+	buf, err := r.readBytes(2)
 	if err != nil {
 		return 0, err
 	}
@@ -51,8 +52,7 @@ func (r *Reader) readUint16() (uint16, error) {
 }
 
 func (r *Reader) readUint32() (uint32, error) {
-	buf := readBuf[:4]
-	_, err := io.ReadFull(r.r, buf)
+	buf, err := r.readBytes(4)
 	if err != nil {
 		return 0, err
 	}
@@ -60,8 +60,7 @@ func (r *Reader) readUint32() (uint32, error) {
 }
 
 func (r *Reader) readUint64() (uint64, error) {
-	buf := readBuf[:8]
-	_, err := io.ReadFull(r.r, buf)
+	buf, err := r.readBytes(8)
 	if err != nil {
 		return 0, err
 	}
@@ -304,9 +303,7 @@ func (r *Reader) readStringBytes() ([]byte, error) {
 		}
 	}
 
-	buf := make([]byte, length)
-	_, err = io.ReadFull(r.r, buf)
-	return buf, err
+	return r.readBytes(int(length))
 }
 
 // ReadBinary reads binary data
@@ -341,13 +338,11 @@ func (r *Reader) ReadBinary() ([]byte, error) {
 		return nil, fmt.Errorf("expected binary but got 0x%02x", b)
 	}
 
-	buf := make([]byte, length)
-	_, err = io.ReadFull(r.r, buf)
-	if err != nil {
-		return nil, err
-	}
+	final := make([]byte, length)
+	copy(final, r.input[r.offset:r.offset+int(length)])
+	r.offset += int(length)
 
-	return buf, nil
+	return final, nil
 }
 
 // ReadArrayHeader reads an array header and returns the number of elements
@@ -472,15 +467,7 @@ func (r *Reader) ReadMap() (map[string]any, error) {
 // ReadValue reads any value and returns it as interface{}
 func (r *Reader) ReadValue() (any, error) {
 	// Peek at the first byte to determine the type
-	b, err := r.readByte()
-	if err != nil {
-		return nil, err
-	}
-
-	// Put the byte back
-	if _, err := r.r.Seek(-1, io.SeekCurrent); err != nil {
-		return nil, err
-	}
+	b := r.input[r.offset]
 
 	// Determine type based on the first byte
 	switch {
@@ -537,15 +524,7 @@ func (r *Reader) decodeValue(rv reflect.Value) error {
 	}
 
 	// Peek at the type marker
-	b, err := r.readByte()
-	if err != nil {
-		return err
-	}
-
-	// Put the byte back
-	if _, err := r.r.Seek(-1, io.SeekCurrent); err != nil {
-		return err
-	}
+	b := r.input[r.offset]
 
 	// Handle nil case
 	if b == Nil {
@@ -757,9 +736,8 @@ func (r *Reader) decodeStruct(rv reflect.Value) error {
 	return nil
 }
 
-// Deserialize is a convenience function that deserializes msgpack bytes into a value
-func Deserialize(data []byte, v any) error {
-	reader := bytes.NewReader(data)
-	r := NewReader(reader)
+// Unmarshal is a convenience function that deserializes msgpack bytes into a value
+func Unmarshal(data []byte, v any) error {
+	r := NewReader(data)
 	return r.Decode(v)
 }

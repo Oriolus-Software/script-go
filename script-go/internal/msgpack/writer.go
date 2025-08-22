@@ -473,8 +473,8 @@ func (w *Writer) encodeMap(rv reflect.Value) error {
 	return nil
 }
 
-// Serialize is a convenience function that encodes any value to msgpack bytes
-func Serialize(val any) ([]byte, error) {
+// Marshal is a convenience function that encodes any value to msgpack bytes
+func Marshal(val any) ([]byte, error) {
 	writer := &bytes.Buffer{}
 	w := NewWriter(writer)
 
