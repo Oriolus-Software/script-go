@@ -16,6 +16,10 @@ func ScriptInit() {
 	vars.SetBool("on_init_bool_true", true)
 	vars.SetBool("on_init_bool_false", false)
 	vars.SetString("on_init_string", "hello")
+
+	message.Handler = func(in message.RawMessage) {
+		log.Info(fmt.Sprintf("received message: %v", in.Value))
+	}
 }
 
 //export tick
@@ -25,10 +29,6 @@ func Tick() {
 	// }
 
 	// log.Info(fmt.Sprintf("hello world on tick %d", time.TicksAlive()))
-
-	message.Handler = func(in message.RawMessage) {
-		log.Info(fmt.Sprintf("received message: %v", in.Value))
-	}
 
 	vars.SetI64("on_tick_i64", int64(time.TicksAlive()))
 	vars.SetF64("on_tick_f64", float64(time.TicksAlive()))
@@ -40,7 +40,7 @@ func Tick() {
 
 	vars.SetString("game_time", fmt.Sprintf("%v", time.GetGameTime()))
 
-	message.Send(TestMessage{Value: "test"})
+	message.Send(TestMessage{Value: "test"}, message.Myself{})
 }
 
 type TestMessage struct {
