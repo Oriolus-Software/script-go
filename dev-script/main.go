@@ -26,7 +26,7 @@ func Tick() {
 
 	// log.Info(fmt.Sprintf("hello world on tick %d", time.TicksAlive()))
 
-	message.Handler = func(in message.Message) {
+	message.Handler = func(in message.RawMessage) {
 		log.Info(fmt.Sprintf("received message: %v", in.Value))
 	}
 
@@ -40,13 +40,18 @@ func Tick() {
 
 	vars.SetString("game_time", fmt.Sprintf("%v", time.GetGameTime()))
 
-	message.Send(message.Message{
-		Meta: message.Meta{
-			Namespace:  "test",
-			Identifier: "test",
-		},
-		Value: "test",
-	}, message.Myself{})
+	message.Send(TestMessage{Value: "test"}, message.Myself{})
+}
+
+type TestMessage struct {
+	Value string
+}
+
+func (m TestMessage) Meta() message.Meta {
+	return message.Meta{
+		Namespace:  "test",
+		Identifier: "test",
+	}
 }
 
 //export register_actions

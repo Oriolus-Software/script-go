@@ -10,7 +10,7 @@ type Meta struct {
 	Bus        string `msgpack:"bus"`
 }
 
-type Message struct {
+type RawMessage struct {
 	Meta   Meta          `msgpack:"meta"`
 	Source MessageSource `msgpack:"source"`
 	Value  any           `msgpack:"value"`
@@ -19,7 +19,7 @@ type Message struct {
 type MessageSource struct {
 }
 
-type Type interface {
+type Message interface {
 	Meta() Meta
 }
 
@@ -93,7 +93,11 @@ func Send(message Message, targets ...Target) {
 		tgts[i] = target.ToMessageTarget()
 	}
 
-	m := ffi.Serialize(message)
+	m := ffi.Serialize(RawMessage{
+		Meta:   message.Meta(),
+		Source: MessageSource{},
+		Value:  message,
+	})
 	t := ffi.Serialize(tgts)
 	send(t.ToPacked(), m.ToPacked())
 }
