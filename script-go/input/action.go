@@ -34,8 +34,10 @@ type ActionState struct {
 
 //go:wasm-module action
 //export state
-func state(actionId uint64) uint64
+func getState(actionId uint64) uint64
 
 func State(actionId string) ActionState {
-	return ffi.Deserialize[ActionState](state(ffi.Serialize(actionId).ToPacked()))
+	var state ActionState
+	ffi.DeserializeInto(getState(ffi.Serialize(actionId).ToPacked()), &state)
+	return state
 }

@@ -27,7 +27,7 @@ func Tick() {
 	// log.Info(fmt.Sprintf("hello world on tick %d", time.TicksAlive()))
 
 	message.Handler = func(in message.Message) {
-		log.Info(fmt.Sprintf("received message: %v", in))
+		log.Info(fmt.Sprintf("received message: %v", in.Value))
 	}
 
 	vars.SetI64("on_tick_i64", int64(time.TicksAlive()))
@@ -36,13 +36,21 @@ func Tick() {
 
 	vars.SetString("mouse_delta", fmt.Sprintf("%v", input.MouseDelta()))
 
-	vars.SetString("move_forward_state", fmt.Sprintf("%v", input.State("move_forward")))
-	vars.SetString("move_forward_state", fmt.Sprintf("%v", input.State("key_s")))
+	vars.SetString("throttle_state", fmt.Sprintf("%v", input.State("doing_things")))
 
 	vars.SetString("game_time", fmt.Sprintf("%v", time.GetGameTime()))
+
+	message.Send(message.Message{
+		Meta: message.Meta{
+			Namespace:  "test",
+			Identifier: "test",
+		},
+		Value: "test",
+	}, message.Myself{})
 }
 
 //export register_actions
 func RegisterActions() {
-	input.RegisterAction("move_forward", "key_w")
+	log.Info("registering actions")
+	input.RegisterAction("doing_things", "key_g")
 }

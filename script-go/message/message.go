@@ -11,8 +11,12 @@ type Meta struct {
 }
 
 type Message struct {
-	Meta  Meta `msgpack:"meta"`
-	Value any  `msgpack:"value"`
+	Meta   Meta          `msgpack:"meta"`
+	Source MessageSource `msgpack:"source"`
+	Value  any           `msgpack:"value"`
+}
+
+type MessageSource struct {
 }
 
 type Type interface {
@@ -84,8 +88,13 @@ type AcrossCoupling struct {
 }
 
 func Send(message Message, targets ...Target) {
-	t := ffi.Serialize(message)
-	m := ffi.Serialize(targets)
+	tgts := make([]any, len(targets))
+	for i, target := range targets {
+		tgts[i] = target.ToMessageTarget()
+	}
+
+	m := ffi.Serialize(message)
+	t := ffi.Serialize(tgts)
 	send(t.ToPacked(), m.ToPacked())
 }
 
