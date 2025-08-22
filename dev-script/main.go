@@ -40,7 +40,7 @@ func Tick() {
 
 	vars.SetString("game_time", fmt.Sprintf("%v", time.GetGameTime()))
 
-	message.Send(TestMessage{Value: "test"}, message.Myself{})
+	message.Send(TestMessage{Value: "test"})
 }
 
 type TestMessage struct {
