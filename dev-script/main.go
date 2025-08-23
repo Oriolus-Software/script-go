@@ -11,15 +11,17 @@ import (
 	"github.com/oriolus-software/script-go/vars"
 )
 
-func init() {
-	input.RegisterAction("doing_things", "key_g")
-}
-
 //export init
 func Init() {
 	// message.Handler = func(in message.RawMessage) {
 	// 	log.Info(fmt.Sprintf("[%d] received message: %v", time.TicksAlive(), in.Value))
 	// }
+
+	input.RegisterAction("doing_things", "key_g")
+
+	message.RegisterHandler(func(m message.Incoming[TestMessage]) {
+		// log.Info(fmt.Sprintf("received message: %+v", m.Meta))
+	})
 
 	vars.SetI64("on_init_ticks_alive", int64(time.TicksAlive()))
 	vars.SetBool("on_init_bool_true", true)
@@ -41,8 +43,12 @@ func Init() {
 }
 
 func Tick() {
-	for range 4200 {
-		vars.SetI64("on_tick_i64", int64(time.TicksAlive()))
+	// for range 4200 {
+	// 	vars.SetI64("on_tick_i64", int64(time.TicksAlive()))
+	// }
+
+	for i := 0; i < 100; i++ {
+		message.Send(TestMessage(true), message.Myself{})
 	}
 
 	// log.Info(fmt.Sprintf("hello world on tick %d", time.TicksAlive()))

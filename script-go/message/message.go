@@ -12,9 +12,9 @@ type Meta struct {
 }
 
 type RawMessage struct {
-	Meta   Meta          `msgpack:"meta"`
-	Source MessageSource `msgpack:"source"`
-	Value  any           `msgpack:"value"`
+	Meta    Meta          `msgpack:"meta"`
+	Source  MessageSource `msgpack:"source"`
+	Payload any           `msgpack:"value"`
 }
 
 func (m *RawMessage) MarshalMsgpack(w *msgpack.Writer) error {
@@ -71,7 +71,7 @@ func (m *RawMessage) MarshalMsgpack(w *msgpack.Writer) error {
 		return err
 	}
 
-	if err := w.Encode(m.Value); err != nil {
+	if err := w.Encode(m.Payload); err != nil {
 		return err
 	}
 
@@ -156,8 +156,8 @@ func Send(message Message, targets ...Target) {
 	}
 
 	m := ffi.Serialize(&RawMessage{
-		Meta:  message.Meta(),
-		Value: message,
+		Meta:    message.Meta(),
+		Payload: message,
 	})
 	t := ffi.Serialize(tgts)
 	send(t.ToPacked(), m.ToPacked())

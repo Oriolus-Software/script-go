@@ -737,7 +737,7 @@ func (r *Reader) decodeStruct(rv reflect.Value) error {
 }
 
 // Unmarshal is a convenience function that deserializes msgpack bytes into a value
-func Unmarshal(data []byte, v any) error {
+func Unmarshal[T any](data []byte, v *T) error {
 	r := NewReader(data)
 	return r.Decode(v)
 }
