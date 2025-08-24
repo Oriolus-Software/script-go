@@ -116,7 +116,7 @@ func Tick() {
 	vars.Set("game_time", fmt.Sprintf("%v", time.GetGameTime()))
 	vars.Set("random", fmt.Sprintf("%v", rand.U64(0, 100)))
 
-	if input.State("doing_things").Kind == input.KindJustPressed {
+	if input.State("doing_things").IsJustPressed() {
 		log.Info("doing things just pressed")
 	}
 

@@ -30,6 +30,22 @@ type ActionState struct {
 	CockpitIndex *int `msgpack:"cockpit_index"`
 }
 
+func (a ActionState) IsPressed() bool {
+	return a.Kind == KindPressed
+}
+
+func (a ActionState) IsJustPressed() bool {
+	return a.Kind == KindJustPressed
+}
+
+func (a ActionState) IsJustReleased() bool {
+	return a.Kind == KindJustReleased
+}
+
+func (a ActionState) IsNone() bool {
+	return a.Kind == KindNone
+}
+
 //go:wasm-module action
 //export state
 func getState(actionId uint64) uint64
