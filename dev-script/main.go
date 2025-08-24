@@ -12,7 +12,6 @@ import (
 	"github.com/oriolus-software/script-go/texture"
 	"github.com/oriolus-software/script-go/time"
 	"github.com/oriolus-software/script-go/vars"
-	"github.com/oriolus-software/script-go/vehicle"
 )
 
 //export init
@@ -83,35 +82,35 @@ func Init() {
 
 //export tick
 func Tick() {
-	// for range 4200 {
-	// vars.SetI64("on_tick_i64", int64(time.TicksAlive()))
-	// }
+	for range 4200 {
+		vars.SetI64("on_tick_i64", int64(time.TicksAlive()))
+	}
 
 	// vars.Set("_random", fmt.Sprintf("%v", rand.U64(0, 100)))
-	vars.Set("delta", fmt.Sprintf("%v", time.Delta64()))
-	// vars.Set("ticks_alive", fmt.Sprintf("%v", time.TicksAlive()))
-	// vars.Set("game_time", fmt.Sprintf("%v", time.GetGameTime()))
+	// vars.Set("delta", fmt.Sprintf("%v", time.Delta64()))
+	// // vars.Set("ticks_alive", fmt.Sprintf("%v", time.TicksAlive()))
+	// // vars.Set("game_time", fmt.Sprintf("%v", time.GetGameTime()))
 
-	b, err := vehicle.GetBogie(0)
-	if err != nil {
-		log.Errorf("error getting bogie: %v", err)
-	}
+	// b, err := vehicle.GetBogie(0)
+	// if err != nil {
+	// 	log.Errorf("error getting bogie: %v", err)
+	// }
 
-	a, err := b.GetAxle(0)
-	if err != nil {
-		log.Errorf("error getting axle: %v", err)
-	}
+	// a, err := b.GetAxle(0)
+	// if err != nil {
+	// 	log.Errorf("error getting axle: %v", err)
+	// }
 
-	b.SetRailBrakeForceNewton(1000)
+	// b.SetRailBrakeForceNewton(1000)
+
+	// a.SetBrakeForceNewton(1000)
+	// a.SetTractionForceNewton(100000)
 
 	// log.Info(fmt.Sprintf("rail quality: %v", a.RailQuality()))
 	// log.Info(fmt.Sprintf("surface type: %v", a.SurfaceType()))
 	// log.Info(fmt.Sprintf("inverse radius: %v", a.InverseRadius()))
 	// log.Info(fmt.Sprintf("velocity vs ground: %v", vehicle.VelocityVsGround()))
 	// log.Info(fmt.Sprintf("acceleration vs ground: %v", vehicle.AccelerationVsGround()))
-
-	a.SetBrakeForceNewton(1000)
-	a.SetTractionForceNewton(100000)
 
 	// for i := 0; i < 100; i++ {
 	// message.Send(TestMessage(true), message.Myself{})
