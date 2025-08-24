@@ -77,7 +77,16 @@ func (t Texture) DrawRect(start, end lmath.UVec2, color Color) {
 	})
 }
 
-func (t Texture) DrawText(font assets.ContentId, text string, topLeft lmath.UVec2, letterSpacing uint32, fullColor *Color, alphaMode AlphaMode) {
+type DrawTextOptions struct {
+	Font          assets.ContentId `msgpack:"font"`
+	Text          string           `msgpack:"text"`
+	TopLeft       lmath.UVec2      `msgpack:"top_left"`
+	LetterSpacing uint32           `msgpack:"letter_spacing"`
+	FullColor     *Color           `msgpack:"full_color"`
+	AlphaMode     AlphaMode        `msgpack:"alpha_mode"`
+}
+
+func (t Texture) DrawText(options *DrawTextOptions) {
 	type drawText struct {
 		Font          assets.ContentId `msgpack:"font"`
 		Text          string           `msgpack:"text"`
@@ -87,16 +96,23 @@ func (t Texture) DrawText(font assets.ContentId, text string, topLeft lmath.UVec
 		AlphaMode     any              `msgpack:"alpha_mode"`
 	}
 
+	var alphaMode any
+	if options.AlphaMode != nil {
+		alphaMode = options.AlphaMode.alphaValue()
+	} else {
+		alphaMode = "opaque"
+	}
+
 	t.addAction(struct {
 		DrawText drawText
 	}{
 		DrawText: drawText{
-			Font:          font,
-			Text:          text,
-			TopLeft:       topLeft,
-			LetterSpacing: letterSpacing,
-			FullColor:     fullColor,
-			AlphaMode:     alphaMode.alphaValue(),
+			Font:          options.Font,
+			Text:          options.Text,
+			TopLeft:       options.TopLeft,
+			LetterSpacing: options.LetterSpacing,
+			FullColor:     options.FullColor,
+			AlphaMode:     alphaMode,
 		},
 	})
 }
@@ -126,8 +142,8 @@ func (t Texture) addAction(action any) {
 }
 
 type DrawTextureOptions struct {
-	SourceRect *lmath.Rectangle
-	TargetRect *lmath.Rectangle
+	SourceRect lmath.Rectangle
+	TargetRect lmath.Rectangle
 }
 
 type DrawPixel struct {
