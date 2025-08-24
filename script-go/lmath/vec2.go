@@ -1,4 +1,4 @@
-package mathf
+package lmath
 
 import (
 	"github.com/oriolus-software/script-go/internal/msgpack"

@@ -7,10 +7,11 @@ type ContentId struct {
 	SubId  int `msgpack:"sub_id"`
 }
 
-//go:wasm-module assets
-//export preload
-func preload(contentId uint64)
-
+// Preload queues a preload for an asset.
 func Preload(contentId ContentId) {
 	preload(ffi.Serialize(contentId).ToPacked())
 }
+
+//go:wasm-module assets
+//export preload
+func preload(contentId uint64)

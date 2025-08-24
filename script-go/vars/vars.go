@@ -1,6 +1,8 @@
 package vars
 
 import (
+	"fmt"
+
 	"github.com/oriolus-software/script-go/assets"
 	"github.com/oriolus-software/script-go/internal/ffi"
 )
@@ -75,4 +77,49 @@ func get_content_id(name uint64) uint64
 
 func GetContentId(name string) assets.ContentId {
 	return ffi.Deserialize[assets.ContentId](get_content_id(ffi.Serialize(name).ToPacked()))
+}
+
+//go:wasm-module var
+//export set_content_id
+func set_content_id(name uint64, value uint64)
+
+func SetContentId(name string, value assets.ContentId) {
+	set_content_id(ffi.Serialize(name).ToPacked(), ffi.Serialize(value).ToPacked())
+}
+
+func Set(name string, value any) {
+	switch value := value.(type) {
+	case int:
+		SetI64(name, int64(value))
+	case int8:
+		SetI64(name, int64(value))
+	case int16:
+		SetI64(name, int64(value))
+	case int32:
+		SetI64(name, int64(value))
+	case int64:
+		SetI64(name, value)
+	case uint:
+		SetI64(name, int64(value))
+	case uint8:
+		SetI64(name, int64(value))
+	case uint16:
+		SetI64(name, int64(value))
+	case uint32:
+		SetI64(name, int64(value))
+	case uint64:
+		SetI64(name, int64(value))
+	case float32:
+		SetF64(name, float64(value))
+	case float64:
+		SetF64(name, value)
+	case bool:
+		SetBool(name, value)
+	case string:
+		SetString(name, value)
+	case assets.ContentId:
+		SetContentId(name, value)
+	default:
+		panic(fmt.Sprintf("unsupported type: %T", value))
+	}
 }

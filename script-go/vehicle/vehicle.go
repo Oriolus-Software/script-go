@@ -1,12 +1,12 @@
 package vehicle
 
 const (
-	VehicleErrorNotFound = VehicleError(256)
-	BogieNotFound        = VehicleError(512)
-	AxleNotFound         = VehicleError(1024)
-	CouplingNotFound     = VehicleError(2048)
-	PantographNotFound   = VehicleError(4096)
-	UnknownError         = VehicleError(0)
+	ErrorVehicleNotFound    = VehicleError(256)
+	ErrorBogieNotFound      = VehicleError(512)
+	ErrorAxleNotFound       = VehicleError(1024)
+	ErrorCouplingNotFound   = VehicleError(2048)
+	ErrorPantographNotFound = VehicleError(4096)
+	ErrorUnknownError       = VehicleError(0)
 
 	CouplingFront = 0
 	CouplingBack  = 1
@@ -35,17 +35,17 @@ type VehicleError uint32
 
 func (e VehicleError) Error() string {
 	switch e {
-	case VehicleErrorNotFound:
+	case ErrorVehicleNotFound:
 		return "vehicle not found"
-	case BogieNotFound:
+	case ErrorBogieNotFound:
 		return "bogie not found"
-	case AxleNotFound:
+	case ErrorAxleNotFound:
 		return "axle not found"
-	case CouplingNotFound:
+	case ErrorCouplingNotFound:
 		return "coupling not found"
-	case PantographNotFound:
+	case ErrorPantographNotFound:
 		return "pantograph not found"
-	case UnknownError:
+	case ErrorUnknownError:
 		return "unknown error"
 	}
 
@@ -148,7 +148,7 @@ func inverseRadius(bogie, axle uint32) float32
 
 //go:wasm-module vehicle
 //export velocity_vs_ground
-func VelocityVsGround() float64
+func VelocityVsGround() float32
 
 //go:wasm-module vehicle
 //export acceleration_vs_ground

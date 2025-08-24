@@ -3,7 +3,7 @@ package texture
 import (
 	"github.com/oriolus-software/script-go/assets"
 	"github.com/oriolus-software/script-go/internal/ffi"
-	"github.com/oriolus-software/script-go/mathf"
+	"github.com/oriolus-software/script-go/lmath"
 )
 
 type CreationOptions struct {
@@ -13,17 +13,18 @@ type CreationOptions struct {
 }
 
 type Texture uint32
+
 type Pixel struct {
-	R uint8
-	G uint8
-	B uint8
+	R uint8 `msgpack:"r"`
+	G uint8 `msgpack:"g"`
+	B uint8 `msgpack:"b"`
 }
 
 type Color struct {
-	R uint8
-	G uint8
-	B uint8
-	A uint8
+	R uint8 `msgpack:"r"`
+	G uint8 `msgpack:"g"`
+	B uint8 `msgpack:"b"`
+	A uint8 `msgpack:"a"`
 }
 
 func Create(opts CreationOptions) Texture {
@@ -58,11 +59,11 @@ func (t Texture) DrawPixels(pixels []DrawPixel) {
 	})
 }
 
-func (t Texture) DrawRect(start, end mathf.UVec2, color Color) {
+func (t Texture) DrawRect(start, end lmath.UVec2, color Color) {
 	type drawRect struct {
-		Start mathf.UVec2
-		End   mathf.UVec2
-		Color Color
+		Start lmath.UVec2 `msgpack:"start"`
+		End   lmath.UVec2 `msgpack:"end"`
+		Color Color       `msgpack:"color"`
 	}
 
 	t.addAction(struct {
@@ -76,26 +77,14 @@ func (t Texture) DrawRect(start, end mathf.UVec2, color Color) {
 	})
 }
 
-func (t Texture) DrawText(font assets.ContentId, text string, topLeft mathf.UVec2, letterSpacing uint32, fullColor *Color, alphaMode any) {
-	var alpha any
-	switch alphaMode := alphaMode.(type) {
-	case string:
-		switch alphaMode {
-		case "opaque":
-			alpha = "Opaque"
-		case "blend":
-			alpha = "Blend"
-		default:
-			panic("invalid alpha mode")
-		}
-	case float32:
-		alpha = struct {
-			Mask float32 `msgpack:"mask"`
-		}{
-			Mask: alphaMode,
-		}
-	default:
-		panic("invalid alpha mode")
+func (t Texture) DrawText(font assets.ContentId, text string, topLeft lmath.UVec2, letterSpacing uint32, fullColor *Color, alphaMode AlphaMode) {
+	type drawText struct {
+		Font          assets.ContentId `msgpack:"font"`
+		Text          string           `msgpack:"text"`
+		TopLeft       lmath.UVec2      `msgpack:"top_left"`
+		LetterSpacing uint32           `msgpack:"letter_spacing"`
+		FullColor     *Color           `msgpack:"full_color"`
+		AlphaMode     any              `msgpack:"alpha_mode"`
 	}
 
 	t.addAction(struct {
@@ -107,12 +96,17 @@ func (t Texture) DrawText(font assets.ContentId, text string, topLeft mathf.UVec
 			TopLeft:       topLeft,
 			LetterSpacing: letterSpacing,
 			FullColor:     fullColor,
-			Alpha:         alpha,
+			AlphaMode:     alphaMode.alphaValue(),
 		},
 	})
 }
 
-func (t Texture) DrawScriptTexture(src Texture, options drawTextureOptions) {
+func (t Texture) DrawScriptTexture(src Texture, options DrawTextureOptions) {
+	type drawScriptTexture struct {
+		Handle  uint32             `msgpack:"handle"`
+		Options DrawTextureOptions `msgpack:"options"`
+	}
+
 	t.addAction(struct {
 		DrawScriptTexture drawScriptTexture
 	}{
@@ -123,36 +117,22 @@ func (t Texture) DrawScriptTexture(src Texture, options drawTextureOptions) {
 	})
 }
 
-func (t Texture) addAction(action any) {
-	addAction(uint32(t), ffi.Serialize(action).ToPacked())
-}
-
 func (t Texture) Flush() {
 	flushActions(uint32(t))
 }
 
-type drawText struct {
-	Font          assets.ContentId
-	Text          string
-	TopLeft       mathf.UVec2
-	LetterSpacing uint32
-	FullColor     *Color
-	Alpha         any
+func (t Texture) addAction(action any) {
+	addAction(uint32(t), ffi.Serialize(action).ToPacked())
 }
 
-type drawTextureOptions struct {
-	SourceRect *mathf.Rectangle
-	TargetRect *mathf.Rectangle
-}
-
-type drawScriptTexture struct {
-	Handle  uint32
-	Options drawTextureOptions
+type DrawTextureOptions struct {
+	SourceRect *lmath.Rectangle
+	TargetRect *lmath.Rectangle
 }
 
 type DrawPixel struct {
-	Pos   mathf.UVec2
-	Color Color
+	Pos   lmath.UVec2 `msgpack:"pos"`
+	Color Color       `msgpack:"color"`
 }
 
 //go:wasm-module textures

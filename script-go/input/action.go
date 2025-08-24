@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	StateNone = iota
-	StateJustPressed
-	StatePressed
-	StateJustReleased
+	KindNone = iota
+	KindJustPressed
+	KindPressed
+	KindJustReleased
 )
 
 type registerAction struct {
@@ -16,7 +16,7 @@ type registerAction struct {
 	DefaultKey string `msgpack:"default_key"`
 }
 
-var actions = make(map[string]registerAction)
+var actions = make(map[string]registerAction, 0)
 
 func RegisterAction(id, defaultKey string) {
 	actions[id] = registerAction{
@@ -24,10 +24,6 @@ func RegisterAction(id, defaultKey string) {
 		DefaultKey: defaultKey,
 	}
 }
-
-//go:wasm-module action
-//export register
-func register_action(action uint64)
 
 type ActionState struct {
 	Kind         int  `msgpack:"kind"`
@@ -49,4 +45,10 @@ func register_actions() {
 	for _, action := range actions {
 		register_action(ffi.Serialize(action).ToPacked())
 	}
+
+	actions = make(map[string]registerAction, 0)
 }
+
+//go:wasm-module action
+//export register
+func register_action(action uint64)
