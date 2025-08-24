@@ -1,33 +1,53 @@
 package log
 
-import "github.com/oriolus-software/script-go/internal/ffi"
+import (
+	"fmt"
 
-const (
-	LevelDebug = iota
-	LevelInfo
-	LevelWarn
-	LevelError
+	"github.com/oriolus-software/script-go/internal/ffi"
 )
 
-func Write(level int, message string) {
-	m := ffi.Serialize(message)
-	write(level, m.ToPacked())
-}
+const (
+	levelDebug = iota
+	levelInfo
+	levelWarn
+	levelError
+)
 
 func Debug(message string) {
-	Write(LevelDebug, message)
+	writeTrampoline(levelDebug, message)
+}
+
+func Debugf(format string, a ...any) {
+	writeTrampoline(levelDebug, fmt.Sprintf(format, a...))
 }
 
 func Info(message string) {
-	Write(LevelInfo, message)
+	writeTrampoline(levelInfo, message)
+}
+
+func Infof(format string, a ...any) {
+	writeTrampoline(levelInfo, fmt.Sprintf(format, a...))
 }
 
 func Warn(message string) {
-	Write(LevelWarn, message)
+	writeTrampoline(levelWarn, message)
+}
+
+func Warnf(format string, a ...any) {
+	writeTrampoline(levelWarn, fmt.Sprintf(format, a...))
 }
 
 func Error(message string) {
-	Write(LevelError, message)
+	writeTrampoline(levelError, message)
+}
+
+func Errorf(format string, a ...any) {
+	writeTrampoline(levelError, fmt.Sprintf(format, a...))
+}
+
+func writeTrampoline(level int, message string) {
+	m := ffi.Serialize(message)
+	write(level, m.ToPacked())
 }
 
 //go:wasm-module log

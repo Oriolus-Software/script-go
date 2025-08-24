@@ -92,12 +92,12 @@ func Tick() {
 
 	b, err := vehicle.GetBogie(0)
 	if err != nil {
-		log.Error(fmt.Sprintf("error getting bogie: %v", err))
+		log.Errorf("error getting bogie: %v", err)
 	}
 
 	a, err := b.GetAxle(0)
 	if err != nil {
-		log.Error(fmt.Sprintf("error getting axle: %v", err))
+		log.Errorf("error getting axle: %v", err)
 	}
 
 	b.SetRailBrakeForceNewton(1000)
