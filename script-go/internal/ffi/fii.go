@@ -13,6 +13,14 @@ type FfiObject struct {
 	len uint32
 }
 
+func (o FfiObject) ToPacked() uint64 {
+	// Match Rust format: [ptr: 4 bytes][len: 4 bytes] in big-endian
+	var packed [8]byte
+	binary.BigEndian.PutUint32(packed[:4], uint32(uintptr(o.ptr)))
+	binary.BigEndian.PutUint32(packed[4:], o.len)
+	return binary.BigEndian.Uint64(packed[:])
+}
+
 func Serialize(val any) FfiObject {
 	data, err := msgpack.Marshal(val)
 	if err != nil {
@@ -26,15 +34,25 @@ func Serialize(val any) FfiObject {
 	return FfiObject{ptr: memPtr, len: uint32(len(data))}
 }
 
-func (o FfiObject) ToPacked() uint64 {
-	// Match Rust format: [ptr: 4 bytes][len: 4 bytes] in big-endian
-	var packed [8]byte
-	binary.BigEndian.PutUint32(packed[:4], uint32(uintptr(o.ptr)))
-	binary.BigEndian.PutUint32(packed[4:], o.len)
-	return binary.BigEndian.Uint64(packed[:])
+func Deserialize[T any](packed uint64) T {
+	var result T
+	data := fromPacked(packed)
+	err := msgpack.Unmarshal(data, &result)
+	if err != nil {
+		panic(err)
+	}
+	return result
 }
 
-func FromPacked(packed uint64) []byte {
+func DeserializeInto[T any](packed uint64, v *T) {
+	data := fromPacked(packed)
+	err := msgpack.Unmarshal(data, v)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func fromPacked(packed uint64) []byte {
 	// Match Rust format: [ptr: 4 bytes][len: 4 bytes] in big-endian
 	var packedBytes [8]byte
 	binary.BigEndian.PutUint64(packedBytes[:], packed)
@@ -44,22 +62,4 @@ func FromPacked(packed uint64) []byte {
 
 	// Safe: ptr is a valid WASM memory address from the allocator
 	return unsafe.Slice((*byte)(unsafe.Pointer(uintptr(ptr))), int(len))
-}
-
-func Deserialize[T any](packed uint64) T {
-	var result T
-	data := FromPacked(packed)
-	err := msgpack.Unmarshal(data, &result)
-	if err != nil {
-		panic(err)
-	}
-	return result
-}
-
-func DeserializeInto[T any](packed uint64, v *T) {
-	data := FromPacked(packed)
-	err := msgpack.Unmarshal(data, v)
-	if err != nil {
-		panic(err)
-	}
 }

@@ -49,6 +49,8 @@ func Init() {
 		MipMaps: false,
 	})
 
+	defer t.Dispose()
+
 	t.DrawText(assets.ContentId{
 		UserId: 1,
 		SubId:  1,
