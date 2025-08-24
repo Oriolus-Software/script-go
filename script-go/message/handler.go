@@ -5,12 +5,12 @@ import (
 	"github.com/oriolus-software/script-go/internal/msgpack"
 )
 
-var handlers = make(map[Meta]func(RawMessage))
+var handlers = make(map[Meta]func(*RawMessage))
 
 func RegisterHandler[T Message](handler func(Incoming[T])) {
 	var proto T
 
-	handlers[proto.Meta()] = func(message RawMessage) {
+	handlers[proto.Meta()] = func(message *RawMessage) {
 		// TODO: Do not marshal and unmarshal message payload
 		raw, err := msgpack.Marshal(&message.Payload)
 		if err != nil {
@@ -24,15 +24,17 @@ func RegisterHandler[T Message](handler func(Incoming[T])) {
 		}
 
 		handler(Incoming[T]{
-			Meta:    message.Meta,
-			Payload: data,
+			Meta:    &message.Meta,
+			Source:  &message.Source,
+			Payload: &data,
 		})
 	}
 }
 
 type Incoming[T Message] struct {
-	Meta    Meta
-	Payload T
+	Meta    *Meta
+	Source  *MessageSource
+	Payload *T
 }
 
 //export late_tick
@@ -46,6 +48,6 @@ func late_tick() {
 			continue
 		}
 
-		handler(message)
+		handler(&message)
 	}
 }

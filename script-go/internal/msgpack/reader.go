@@ -521,6 +521,21 @@ func (r *Reader) decodeValue(rv reflect.Value) error {
 		if unmarshaler, ok := rv.Addr().Interface().(Unmarshaler); ok {
 			return unmarshaler.UnmarshalMsgpack(r)
 		}
+	} else {
+		// If not addressable, try via temporary pointer if pointer type implements Unmarshaler
+		ptr := reflect.New(rv.Type())
+		ptr.Elem().Set(rv)
+		if unmarshaler, ok := ptr.Interface().(Unmarshaler); ok {
+			if err := unmarshaler.UnmarshalMsgpack(r); err != nil {
+				return err
+			}
+			rv.Set(ptr.Elem())
+			return nil
+		}
+	}
+	// Also allow non-pointer receiver implementations
+	if unmarshaler, ok := rv.Interface().(Unmarshaler); ok {
+		return unmarshaler.UnmarshalMsgpack(r)
 	}
 
 	// Peek at the type marker
@@ -633,6 +648,7 @@ func (r *Reader) decodeSlice(rv reflect.Value) error {
 	}
 
 	slice := reflect.MakeSlice(rv.Type(), length, length)
+
 	for i := 0; i < length; i++ {
 		if err := r.decodeValue(slice.Index(i)); err != nil {
 			return err

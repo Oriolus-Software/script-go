@@ -383,8 +383,17 @@ func (w *Writer) WriteStruct(v any) error {
 }
 
 func (w *Writer) encodeValue(rv reflect.Value) error {
-	marshaler, ok := rv.Interface().(Marshaler)
-	if ok {
+	var marshaler Marshaler
+
+	if rv.CanAddr() {
+		marshaler, _ = rv.Addr().Interface().(Marshaler)
+	}
+
+	if marshaler == nil {
+		marshaler, _ = rv.Interface().(Marshaler)
+	}
+
+	if marshaler != nil {
 		return marshaler.MarshalMsgpack(w)
 	}
 

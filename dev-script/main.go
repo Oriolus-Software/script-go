@@ -20,7 +20,7 @@ func Init() {
 	input.RegisterAction("doing_things", "key_g")
 
 	message.RegisterHandler(func(m message.Incoming[TestMessage]) {
-		// log.Infof("received message: %+v", m.Meta)
+		log.Infof("received message: %+v", m.Source)
 	})
 
 	vars.Set("on_init_ticks_alive", time.TicksAlive())

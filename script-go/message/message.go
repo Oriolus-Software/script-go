@@ -18,7 +18,7 @@ type RawMessage struct {
 }
 
 func (m *RawMessage) MarshalMsgpack(w *msgpack.Writer) error {
-	w.WriteMapHeader(3)
+	w.WriteMapHeader(2)
 
 	if err := w.WriteString("meta"); err != nil {
 		return err
@@ -59,14 +59,6 @@ func (m *RawMessage) MarshalMsgpack(w *msgpack.Writer) error {
 		}
 	}
 
-	if err := w.WriteString("source"); err != nil {
-		return err
-	}
-
-	if err := w.WriteStruct(m.Source); err != nil {
-		return err
-	}
-
 	if err := w.WriteString("value"); err != nil {
 		return err
 	}
@@ -79,6 +71,46 @@ func (m *RawMessage) MarshalMsgpack(w *msgpack.Writer) error {
 }
 
 type MessageSource struct {
+	Coupling               string `msgpack:"coupling"`                // "" if not set
+	ModuleSlotIndex        int    `msgpack:"module_slot_index"`       // -1 if not set
+	ModuleSlotCockpitIndex int    `msgpack:"module_slot_cockpit_idx"` // -1 if not set
+}
+
+func (m *MessageSource) UnmarshalMsgpack(r *msgpack.Reader) error {
+	h, err := r.ReadMapHeader()
+	if err != nil {
+		return err
+	}
+
+	m.ModuleSlotIndex = -1
+	m.ModuleSlotCockpitIndex = -1
+
+	for i := 0; i < h; i++ {
+		key, err := r.ReadString()
+		if err != nil {
+			return err
+		}
+
+		switch key {
+		case "coupling":
+			err := r.Decode(&m.Coupling)
+			if err != nil {
+				return err
+			}
+		case "module_slot_index":
+			idx, err := r.ReadInt()
+			if err == nil {
+				m.ModuleSlotIndex = int(idx)
+			}
+		case "module_slot_cockpit_index":
+			idx, err := r.ReadInt()
+			if err == nil {
+				m.ModuleSlotCockpitIndex = int(idx)
+			}
+		}
+	}
+
+	return nil
 }
 
 type Message interface {
@@ -91,8 +123,9 @@ func Send(message Message, targets ...Target) {
 		tgts[i] = target.toMessageTarget()
 	}
 
+	meta := message.Meta()
 	m := ffi.Serialize(&RawMessage{
-		Meta:    message.Meta(),
+		Meta:    meta,
 		Payload: message,
 	})
 	t := ffi.Serialize(tgts)

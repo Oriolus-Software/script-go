@@ -500,6 +500,100 @@ func TestUnmarshaler(t *testing.T) {
 	}
 }
 
+type inner struct {
+	Foo string `msgpack:"foo"`
+	Bar int    `msgpack:"bar"`
+}
+
+type outer struct {
+	Inner inner
+}
+
+func (obj *inner) UnmarshalMsgpack(r *msgpack.Reader) error {
+	length, err := r.ReadMapHeader()
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < length; i++ {
+		key, err := r.ReadString()
+		if err != nil {
+			return err
+		}
+
+		switch key {
+		case "foo":
+			obj.Foo, err = r.ReadString()
+			if err != nil {
+				return err
+			}
+		case "bar":
+			val, err := r.ReadInt()
+			if err != nil {
+				return err
+			}
+			obj.Bar = int(val)
+		}
+	}
+
+	return nil
+}
+
+func TestUnmarshalerInSlice(t *testing.T) {
+	original := []inner{
+		{Foo: "hello", Bar: 42},
+		{Foo: "world", Bar: 43},
+	}
+
+	data, err := orig.Marshal(&original)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var result []inner
+	err = msgpack.Unmarshal(data, &result)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(result) != len(original) {
+		t.Fatalf("expected length %d, got %d", len(original), len(result))
+	}
+
+	for i, v := range original {
+		if result[i] != v {
+			t.Fatalf("index %d: expected %v, got %v", i, v, result[i])
+		}
+	}
+}
+
+func TestUnmarshalerInSubStruct(t *testing.T) {
+	original := outer{
+		Inner: inner{
+			Foo: "hello",
+			Bar: 42,
+		},
+	}
+
+	data, err := msgpack.Marshal(original)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var result outer
+	err = msgpack.Unmarshal(data, &result)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Inner.Foo != original.Inner.Foo {
+		t.Fatalf("Foo: expected %v, got %v", original.Inner.Foo, result.Inner.Foo)
+	}
+	if result.Inner.Bar != original.Inner.Bar {
+		t.Fatalf("Bar: expected %v, got %v", original.Inner.Bar, result.Inner.Bar)
+	}
+}
+
 func TestSerializeDeserialize(t *testing.T) {
 	type TestStruct struct {
 		Name   string            `msgpack:"name"`
