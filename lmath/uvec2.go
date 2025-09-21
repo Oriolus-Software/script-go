@@ -14,8 +14,13 @@ func (v UVec2) MarshalMsgpack(w *msgpack.Writer) error {
 		return err
 	}
 
-	w.WriteInt(int64(v.X))
-	w.WriteInt(int64(v.Y))
+	if err := w.WriteInt(int64(v.X)); err != nil {
+		return err
+	}
+
+	if err := w.WriteInt(int64(v.Y)); err != nil {
+		return err
+	}
 
 	return nil
 }

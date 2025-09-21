@@ -100,7 +100,7 @@ func (t Texture) DrawText(options *DrawTextOptions) {
 	if options.AlphaMode != nil {
 		alphaMode = options.AlphaMode.alphaValue()
 	} else {
-		alphaMode = "opaque"
+		alphaMode = "Opaque"
 	}
 
 	t.addAction(struct {
