@@ -8,7 +8,7 @@ type UVec2 struct {
 }
 
 func (v *UVec2) UnmarshalMsgpack(r *msgpack.Reader) error {
-	var arr []int
+	var arr []int64
 	err := msgpack.ReadTypedSlice(r, &arr)
 	if err != nil {
 		return err
