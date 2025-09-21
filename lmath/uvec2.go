@@ -1,6 +1,10 @@
 package lmath
 
-import "github.com/oriolus-software/script-go/internal/msgpack"
+import (
+	"fmt"
+
+	"github.com/oriolus-software/script-go/internal/msgpack"
+)
 
 type UVec2 struct {
 	X uint
@@ -8,13 +12,26 @@ type UVec2 struct {
 }
 
 func (v *UVec2) UnmarshalMsgpack(r *msgpack.Reader) error {
-	var arr []int64
-	err := msgpack.ReadTypedSlice(r, &arr)
+	length, err := r.ReadArrayHeader()
 	if err != nil {
 		return err
 	}
-	v.X = uint(arr[0])
-	v.Y = uint(arr[1])
+
+	if length != 2 {
+		return fmt.Errorf("expected 2 elements, got %d", length)
+	}
+
+	x, err := r.ReadValue()
+	if err != nil {
+		return err
+	}
+	v.X = x.(uint)
+	y, err := r.ReadValue()
+	if err != nil {
+		return err
+	}
+	v.Y = y.(uint)
+
 	return nil
 }
 
