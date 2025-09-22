@@ -2,6 +2,7 @@ package input
 
 import (
 	"github.com/oriolus-software/script-go/internal/ffi"
+	"github.com/oriolus-software/script-go/lmath"
 )
 
 const (
@@ -26,8 +27,9 @@ func RegisterAction(id, defaultKey string) {
 }
 
 type ActionState struct {
-	Kind         int  `msgpack:"kind"`
-	CockpitIndex *int `msgpack:"cockpit_index"`
+	Kind         int         `msgpack:"kind"`
+	CockpitIndex *int        `msgpack:"cockpit_index"`
+	UV           *lmath.Vec2 `msgpack:"uv"`
 }
 
 func (a ActionState) IsPressed() bool {
