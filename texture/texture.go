@@ -78,22 +78,24 @@ func (t Texture) DrawRect(start, end lmath.UVec2, color Color) {
 }
 
 type DrawTextOptions struct {
-	Font          assets.ContentId `msgpack:"font"`
-	Text          string           `msgpack:"text"`
-	TopLeft       lmath.UVec2      `msgpack:"top_left"`
-	LetterSpacing uint32           `msgpack:"letter_spacing"`
-	FullColor     *Color           `msgpack:"full_color"`
-	AlphaMode     AlphaMode        `msgpack:"alpha_mode"`
+	Font          assets.ContentId
+	Text          string
+	TopLeft       lmath.IVec2
+	LetterSpacing uint32
+	FullColor     *Color
+	AlphaMode     AlphaMode
+	TargetRect    *lmath.Rectangle
 }
 
 func (t Texture) DrawText(options *DrawTextOptions) {
 	type drawText struct {
 		Font          assets.ContentId `msgpack:"font"`
 		Text          string           `msgpack:"text"`
-		TopLeft       lmath.UVec2      `msgpack:"top_left"`
+		TopLeft       lmath.IVec2      `msgpack:"top_left"`
 		LetterSpacing uint32           `msgpack:"letter_spacing"`
 		FullColor     *Color           `msgpack:"full_color"`
 		AlphaMode     any              `msgpack:"alpha_mode"`
+		TargetRect    *lmath.Rectangle `msgpack:"target_rect"`
 	}
 
 	var alphaMode any
@@ -113,6 +115,7 @@ func (t Texture) DrawText(options *DrawTextOptions) {
 			LetterSpacing: options.LetterSpacing,
 			FullColor:     options.FullColor,
 			AlphaMode:     alphaMode,
+			TargetRect:    options.TargetRect,
 		},
 	})
 }
@@ -131,6 +134,10 @@ func (t Texture) DrawScriptTexture(src Texture, options DrawTextureOptions) {
 			Options: options,
 		},
 	})
+}
+
+func (t Texture) Expose(name string) lmath.IVec2 {
+	return expose(uint32(t), ffi.Serialize(name).ToPacked())
 }
 
 func (t Texture) Flush() {
@@ -174,3 +181,7 @@ func flushActions(texture uint32)
 //go:wasm-module textures
 //export apply_to
 func applyTo(texture uint32, target uint64)
+
+//go:wasm-module textures
+//export expose
+func expose(texture uint32, name uint64) lmath.IVec2
