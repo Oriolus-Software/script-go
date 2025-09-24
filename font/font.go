@@ -17,13 +17,13 @@ type BitmapFontProperties struct {
 	/// The vertical size of the font.
 	VerticalSize int32 `msgpack:"vertical_size"`
 	/// The letters in the font.
-	Letters map[rune]FontLetter `msgpack:"letters"`
+	Letters map[string]FontLetter `msgpack:"letters"`
 }
 
 // / A letter in a bitmap font.
 type FontLetter struct {
 	/// The character represented by the letter.
-	Character rune `msgpack:"character"`
+	Character string `msgpack:"character"`
 	/// The start of the letter in the texture.
 	Start uint32 `msgpack:"start"`
 	/// The width of the letter in the texture.
