@@ -516,41 +516,52 @@ func (r *Reader) Decode(v any) error {
 }
 
 func (r *Reader) decodeValue(rv reflect.Value) error {
-	// Check if the target implements Unmarshaler
+	// Handle nil marker first
+	if r.offset < len(r.input) {
+		b := r.input[r.offset]
+		if b == Nil {
+			if err := r.ReadNil(); err != nil {
+				return err
+			}
+			if rv.Kind() == reflect.Ptr {
+				rv.Set(reflect.Zero(rv.Type()))
+			}
+			return nil
+		}
+	}
+
+	// If pointer, allocate if nil and try pointer Unmarshaler first
+	if rv.Kind() == reflect.Ptr {
+		rv.Set(reflect.New(rv.Type().Elem()))
+		if unmarshaler, ok := rv.Interface().(Unmarshaler); ok {
+			return unmarshaler.UnmarshalMsgpack(r)
+		}
+		// Decode into the element if the pointer type does not implement Unmarshaler
+		return r.decodeValue(rv.Elem())
+	}
+
+	// For non-pointers: try addressable pointer receiver first
 	if rv.CanAddr() {
 		if unmarshaler, ok := rv.Addr().Interface().(Unmarshaler); ok {
 			return unmarshaler.UnmarshalMsgpack(r)
 		}
 	} else {
-		// If not addressable, try via temporary pointer if pointer type implements Unmarshaler
+		// If not addressable, try via temporary pointer and copy back if possible
 		ptr := reflect.New(rv.Type())
 		ptr.Elem().Set(rv)
 		if unmarshaler, ok := ptr.Interface().(Unmarshaler); ok {
 			if err := unmarshaler.UnmarshalMsgpack(r); err != nil {
 				return err
 			}
-			rv.Set(ptr.Elem())
+			if rv.CanSet() {
+				rv.Set(ptr.Elem())
+			}
 			return nil
 		}
 	}
-	// Also allow non-pointer receiver implementations
-	if unmarshaler, ok := rv.Interface().(Unmarshaler); ok {
-		return unmarshaler.UnmarshalMsgpack(r)
-	}
 
-	// Peek at the type marker
+	// Peek at the type marker for remaining cases
 	b := r.input[r.offset]
-
-	// Handle nil case
-	if b == Nil {
-		if err := r.ReadNil(); err != nil {
-			return err
-		}
-		if rv.Kind() == reflect.Ptr {
-			rv.Set(reflect.Zero(rv.Type()))
-		}
-		return nil
-	}
 
 	switch rv.Kind() {
 	case reflect.Bool:
@@ -622,6 +633,7 @@ func (r *Reader) decodeValue(rv reflect.Value) error {
 	case reflect.Map:
 		return r.decodeMap(rv)
 	case reflect.Ptr:
+		// Pointer cases are handled earlier; this is a safeguard.
 		if rv.IsNil() {
 			rv.Set(reflect.New(rv.Type().Elem()))
 		}
