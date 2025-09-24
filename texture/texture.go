@@ -136,8 +136,8 @@ func (t Texture) DrawScriptTexture(src Texture, options DrawTextureOptions) {
 	})
 }
 
-func (t Texture) Expose(name string) lmath.IVec2 {
-	return expose(uint32(t), ffi.Serialize(name).ToPacked())
+func (t Texture) Expose(name string) {
+	expose(uint32(t), ffi.Serialize(name).ToPacked())
 }
 
 func (t Texture) Flush() {
@@ -184,4 +184,4 @@ func applyTo(texture uint32, target uint64)
 
 //go:wasm-module textures
 //export expose
-func expose(texture uint32, name uint64) lmath.IVec2
+func expose(texture uint32, name uint64)
