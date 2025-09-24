@@ -21,15 +21,17 @@ func (v *Vec2) UnmarshalMsgpack(r *msgpack.Reader) error {
 		return fmt.Errorf("expected 2 elements, got %d", l)
 	}
 
-	v.X, err = r.ReadFloat32()
+	x, err := r.ReadFloat32()
 	if err != nil {
 		return err
 	}
 
-	v.Y, err = r.ReadFloat32()
+	y, err := r.ReadFloat32()
 	if err != nil {
 		return err
 	}
+
+	*v = Vec2{X: x, Y: y}
 
 	return nil
 }
